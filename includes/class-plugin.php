@@ -27,6 +27,7 @@ final class Plugin
 
     public static function activate(): void
     {
+        Install::maybe_upgrade();
         flush_rewrite_rules();
     }
 
