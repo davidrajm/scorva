@@ -1,0 +1,19 @@
+{
+    "name": "sastt/project-reviews",
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "ProjectReviews\\": "includes/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ProjectReviews\\Tests\\": "tests/"
+        }
+    }
+}
