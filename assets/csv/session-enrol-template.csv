@@ -1,0 +1,3 @@
+reg_no,name,program,batch,panel,project_title,guide_emp_id,guide_name
+25MDT1001,Alex Morgan,MSC-DS,MSC-DS-2025-S1,Panel A,Machine Learning for Healthcare,EMP001,Dr. Patel
+25MDT1002,Jordan Lee,MSC-DS,MSC-DS-2025-S1,Panel A,Data Pipeline Optimization,EMP002,Dr. Chen

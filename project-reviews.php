@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: Project Reviews
- * Description: Project review workflows for SASTT.
+ * Plugin Name: Scorva
+ * Description: The Review Management System — project review workflows for SASTT.
  * Version: 0.1.0
  * Author: SASTT
  * Text Domain: project-reviews
@@ -13,14 +13,25 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('PR_PLUGIN_VERSION', '0.1.0');
-define('PR_PLUGIN_SLUG', 'project-reviews');
+if (!defined('PR_PLUGIN_VERSION')) {
+    define('PR_PLUGIN_VERSION', '0.1.0');
+}
+if (!defined('PR_PLUGIN_SLUG')) {
+    define('PR_PLUGIN_SLUG', 'project-reviews');
+}
+if (!defined('PR_PLUGIN_FILE')) {
+    define('PR_PLUGIN_FILE', __FILE__);
+}
+if (!defined('PR_PLUGIN_DIR')) {
+    define('PR_PLUGIN_DIR', plugin_dir_path(__FILE__));
+}
 
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/includes/class-plugin.php';
 
-$plugin = ProjectReviews\Plugin::instance();
-$plugin->init();
+add_action('init', static function (): void {
+    ProjectReviews\Plugin::instance()->init();
+});
 
 register_activation_hook(__FILE__, [ProjectReviews\Plugin::class, 'activate']);
 register_deactivation_hook(__FILE__, [ProjectReviews\Plugin::class, 'deactivate']);

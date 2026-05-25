@@ -1,19 +1,45 @@
 {
     "name": "sastt/project-reviews",
     "require": {
-        "php": ">=8.0"
+        "php": ">=8.2",
+        "phpoffice/phpspreadsheet": "^2.0",
+        "maennchen/zipstream-php": "^3.1 <3.2",
+        "dompdf/dompdf": "^3.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.6"
+        "phpunit/phpunit": "^9.6",
+        "doctrine/instantiator": "^1.5"
+    },
+    "config": {
+        "platform": {
+            "php": "8.2.27"
+        }
     },
     "autoload": {
         "psr-4": {
             "ProjectReviews\\": "includes/"
-        }
+        },
+        "classmap": [
+            "includes/"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
             "ProjectReviews\\Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "test": "@php vendor/bin/phpunit",
+        "test:journey": "@php vendor/bin/phpunit --group journey",
+        "test:e2e": "npm run test:e2e --if-present",
+        "test:teardown": "php bin/pr-test-teardown.php",
+        "release": "bash bin/release.sh"
+    },
+    "scripts-descriptions": {
+        "test": "Run PHPUnit suite (unit + journey)",
+        "test:journey": "Run cross-domain journey tests only",
+        "test:e2e": "Run Playwright browser UI tests (requires live WordPress; skips if not configured)",
+        "test:teardown": "Opt-in teardown of E2E data (pass -- --dry-run or -- --confirm)",
+        "release": "Run tests, build assets, production Composer deps, and zip to dist/"
     }
 }

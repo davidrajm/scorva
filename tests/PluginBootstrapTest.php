@@ -13,5 +13,7 @@ final class PluginBootstrapTest extends TestCase
         require_once dirname(__DIR__) . '/project-reviews.php';
         $this->assertTrue(defined('PR_PLUGIN_VERSION'));
         $this->assertSame('project-reviews', PR_PLUGIN_SLUG);
+        $this->assertTrue(defined('PR_PLUGIN_DIR'));
+        $this->assertTrue(defined('PR_PLUGIN_FILE'));
     }
 }

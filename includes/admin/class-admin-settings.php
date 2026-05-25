@@ -1,0 +1,675 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ProjectReviews\Admin;
+
+use ProjectReviews\Capabilities;
+use ProjectReviews\Rest_Bootstrap;
+use ProjectReviews\Services\PluginSettings;
+use ProjectReviews\Services\ThemeNavBootstrap;
+
+final class Admin_Settings
+{
+    public static function register(): void
+    {
+        $menu_label = PluginSettings::app_short_name();
+        add_options_page(
+            $menu_label,
+            $menu_label,
+            PR_CAP_MANAGE_SETTINGS,
+            'project-reviews-settings',
+            [self::class, 'render_page']
+        );
+
+        register_setting(
+            'project_reviews_settings',
+            PluginSettings::OPTION_KEY,
+            [
+                'type' => 'array',
+                'sanitize_callback' => [PluginSettings::class, 'sanitize'],
+                'default' => PluginSettings::get(),
+            ]
+        );
+
+        register_setting(
+            'project_reviews_settings',
+            PluginSettings::DELETE_DATA_ON_UNINSTALL_KEY,
+            [
+                'type' => 'boolean',
+                'sanitize_callback' => [PluginSettings::class, 'sanitize_delete_data_on_uninstall'],
+                'default' => false,
+            ]
+        );
+
+        add_action('admin_enqueue_scripts', [self::class, 'enqueue_assets']);
+    }
+
+    public static function enqueue_assets(string $hook): void
+    {
+        if ($hook !== 'settings_page_project-reviews-settings') {
+            return;
+        }
+
+        wp_enqueue_media();
+        wp_register_script(
+            'pr-admin-settings',
+            false,
+            ['jquery'],
+            false,
+            true
+        );
+        wp_enqueue_script('pr-admin-settings');
+        wp_add_inline_script('pr-admin-settings', self::inline_script());
+        wp_localize_script('pr-admin-settings', 'prAdminSettings', [
+            'backupUrl' => rest_url(Rest_Bootstrap::NAMESPACE . '/backup/download'),
+            'restNonce' => wp_create_nonce('wp_rest'),
+        ]);
+    }
+
+    public static function render_page(): void
+    {
+        if (!current_user_can(PR_CAP_MANAGE_SETTINGS)) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'project-reviews'));
+        }
+
+        $settings = PluginSettings::get();
+        $option_key = PluginSettings::OPTION_KEY;
+        $delete_on_uninstall = PluginSettings::delete_data_on_uninstall();
+        $delete_option_key = PluginSettings::DELETE_DATA_ON_UNINSTALL_KEY;
+        $app_name = PluginSettings::app_display_name();
+        $app_short = PluginSettings::app_short_name();
+        ?>
+        <div class="wrap">
+            <h1><?php
+            echo esc_html(
+                sprintf(
+                    /* translators: %s: application display name */
+                    __('%s Settings', 'project-reviews'),
+                    $app_name
+                )
+            );
+            ?></h1>
+            <form method="post" action="options.php" id="pr-settings-form">
+                <?php settings_fields('project_reviews_settings'); ?>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">
+                            <label for="pr-app-display-name"><?php echo esc_html__('Application display name', 'project-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <input name="<?php echo esc_attr($option_key); ?>[app_display_name]"
+                                id="pr-app-display-name" type="text" class="regular-text"
+                                value="<?php echo esc_attr(PluginSettings::app_display_name()); ?>" />
+                            <p class="description">
+                                <?php echo esc_html__(
+                                    'Shown in the app header, landing page, emails, and permission messages.',
+                                    'project-reviews'
+                                ); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="pr-from-name"><?php echo esc_html__('From name', 'project-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <input name="<?php echo esc_attr($option_key); ?>[from_name]"
+                                id="pr-from-name" type="text" class="regular-text"
+                                value="<?php echo esc_attr((string) $settings['from_name']); ?>" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="pr-reply-to"><?php echo esc_html__('Reply-to email', 'project-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <input name="<?php echo esc_attr($option_key); ?>[reply_to]"
+                                id="pr-reply-to" type="email" class="regular-text"
+                                value="<?php echo esc_attr((string) $settings['reply_to']); ?>" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="pr-login-url"><?php echo esc_html__('Base login URL', 'project-reviews'); ?></label>
+                        </th>
+                        <td>
+                            <input name="<?php echo esc_attr($option_key); ?>[login_url]"
+                                id="pr-login-url" type="url" class="regular-text"
+                                value="<?php echo esc_attr((string) $settings['login_url']); ?>" />
+                            <p class="description">
+                                <?php echo esc_html__('Used in reviewer invite emails.', 'project-reviews'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php echo esc_html__('Site menu', 'project-reviews'); ?>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox"
+                                    name="<?php echo esc_attr($option_key); ?>[theme_nav_auto_bootstrap_enabled]"
+                                    value="1" <?php checked(PluginSettings::theme_nav_auto_bootstrap_enabled()); ?> />
+                                <?php echo esc_html__(
+                                    'Add Reviews link to site menu on activation',
+                                    'project-reviews'
+                                ); ?>
+                            </label>
+                            <br />
+                            <label>
+                                <input type="checkbox"
+                                    name="<?php echo esc_attr($option_key); ?>[theme_nav_bridge_enabled]"
+                                    value="1" <?php checked(PluginSettings::theme_nav_bridge_enabled()); ?> />
+                                <?php echo esc_html__(
+                                    'Expose Reviews link via theme filter bridge (custom PHP nav themes)',
+                                    'project-reviews'
+                                ); ?>
+                            </label>
+                            <p>
+                                <label for="pr-theme-nav-menu-label">
+                                    <?php echo esc_html__('Menu label', 'project-reviews'); ?>
+                                </label>
+                                <input name="<?php echo esc_attr($option_key); ?>[theme_nav_menu_label]"
+                                    id="pr-theme-nav-menu-label" type="text" class="regular-text"
+                                    value="<?php echo esc_attr(PluginSettings::theme_nav_menu_label()); ?>" />
+                            </p>
+                            <p>
+                                <label for="pr-reviews-entry-url">
+                                    <?php echo esc_html__('Reviews entry URL', 'project-reviews'); ?>
+                                </label>
+                                <input id="pr-reviews-entry-url" type="url" class="large-text" readonly
+                                    value="<?php echo esc_attr(ThemeNavBootstrap::reviews_url()); ?>" />
+                                <button type="button" class="button" id="pr-copy-reviews-url">
+                                    <?php echo esc_html__('Copy URL', 'project-reviews'); ?>
+                                </button>
+                            </p>
+                            <p class="description">
+                                <?php
+                                $status = ThemeNavBootstrap::bootstrap_status();
+                                echo esc_html(
+                                    sprintf(
+                                        /* translators: %s: bootstrap status */
+                                        __('Bootstrap status: %s', 'project-reviews'),
+                                        $status
+                                    )
+                                );
+                                ?>
+                                —
+                                <?php echo esc_html__(
+                                    'If automatic setup failed, add a custom link under Appearance → Menus.',
+                                    'project-reviews'
+                                ); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php echo esc_html__('Faculty directory', 'project-reviews'); ?>
+                        </th>
+                        <td>
+                            <label>
+                                <input type="checkbox"
+                                    name="<?php echo esc_attr($option_key); ?>[faculty_bridge_enabled]"
+                                    value="1" <?php checked(!empty($settings['faculty_bridge_enabled'])); ?> />
+                                <?php echo esc_html__(
+                                    'Enable faculty directory bridge (read from wp_faculty when available)',
+                                    'project-reviews'
+                                ); ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__('Notifications', 'project-reviews'); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox"
+                                    name="<?php echo esc_attr($option_key); ?>[notify_rubric_open]"
+                                    value="1" <?php checked(!empty($settings['notify_rubric_open'])); ?> />
+                                <?php echo esc_html__('Email when a rubric is confirmed (marking opens)', 'project-reviews'); ?>
+                            </label>
+                            <br />
+                            <label>
+                                <input type="checkbox"
+                                    name="<?php echo esc_attr($option_key); ?>[notify_session_closed]"
+                                    value="1" <?php checked(!empty($settings['notify_session_closed'])); ?> />
+                                <?php echo esc_html__('Email when a project is closed', 'project-reviews'); ?>
+                            </label>
+                        </td>
+                    </tr>
+                </table>
+
+                <p class="description">
+                    <?php echo esc_html__(
+                        'Panel report PDF letterhead and layout are configured per project under Settings → Panel Report in the coordinator workspace.',
+                        'project-reviews'
+                    ); ?>
+                </p>
+
+                <h2><?php echo esc_html__('Backup', 'project-reviews'); ?></h2>
+                <p><?php echo esc_html__(
+                    'Download a ZIP archive with plugin database tables, options, and Excel reports for every project. Use this before migration, disaster recovery, or before enabling destructive uninstall below.',
+                    'project-reviews'
+                ); ?></p>
+                <p>
+                    <button type="button" class="button button-secondary" id="pr-download-full-backup">
+                        <?php echo esc_html__('Download full backup (ZIP)', 'project-reviews'); ?>
+                    </button>
+                    <span id="pr-backup-status" class="description" style="margin-left:8px;"></span>
+                </p>
+
+                <h2><?php echo esc_html__('Lifecycle', 'project-reviews'); ?></h2>
+                <p><?php echo esc_html__(
+                    'Deactivating the plugin keeps all review data, settings, and user accounts unchanged. Only front-end routes are flushed.',
+                    'project-reviews'
+                ); ?></p>
+                <p><?php echo esc_html__(
+                    'Deleting the plugin from WordPress removes database tables, options, and plugin capabilities only when the checkbox below was enabled and saved before you delete the plugin.',
+                    'project-reviews'
+                ); ?></p>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row"><?php echo esc_html__('Uninstall data', 'project-reviews'); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox"
+                                    name="<?php echo esc_attr($delete_option_key); ?>"
+                                    value="1" <?php checked($delete_on_uninstall); ?> />
+                                <?php echo esc_html(
+                                    sprintf(
+                                        /* translators: %s: short application name */
+                                        __('Remove all %s data when uninstalling the plugin', 'project-reviews'),
+                                        $app_short
+                                    )
+                                ); ?>
+                            </label>
+                            <p class="description">
+                                <?php echo esc_html__(
+                                    'When unchecked (default), uninstall leaves pr_* tables and options in place for reinstall or manual recovery. When checked, uninstall drops all plugin tables and options. WordPress user accounts are never deleted. Back up your site before enabling this option.',
+                                    'project-reviews'
+                                ); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <h2><?php echo esc_html__('Capability defaults', 'project-reviews'); ?></h2>
+                <p><?php echo esc_html__(
+                    'On activation, administrators receive all capabilities. Coordinators may manage projects and override individual marks with a mandatory audit reason. Reviewers may enter marks only.',
+                    'project-reviews'
+                ); ?></p>
+                <ul class="ul-disc">
+                    <?php foreach (Capabilities::all() as $cap) : ?>
+                        <li><code><?php echo esc_html($cap); ?></code></li>
+                    <?php endforeach; ?>
+                </ul>
+
+                <?php submit_button(); ?>
+            </form>
+        </div>
+        <?php
+    }
+
+    /**
+     * @param array<string, mixed> $pdf
+     */
+    private static function render_panel_pdf_settings(string $option_key, array $pdf): void
+    {
+        $letterhead = is_array($pdf['letterhead'] ?? null) ? $pdf['letterhead'] : [];
+        $blocks = is_array($letterhead['blocks'] ?? null) ? $letterhead['blocks'] : [];
+        $table = is_array($pdf['table'] ?? null) ? $pdf['table'] : [];
+        $signatures = is_array($pdf['signatures'] ?? null) ? $pdf['signatures'] : [];
+        $hod = is_array($signatures['hod'] ?? null) ? $signatures['hod'] : [];
+
+        $logo_attachment = 0;
+        $logo_width = 4.0;
+        foreach ($blocks as $block) {
+            if (is_array($block) && ($block['type'] ?? '') === 'image') {
+                $logo_attachment = (int) ($block['attachment_id'] ?? 0);
+                $logo_width = (float) ($block['width_in'] ?? 4.0);
+                break;
+            }
+        }
+
+        $text_blocks = array_values(array_filter(
+            $blocks,
+            static fn ($block): bool => is_array($block) && ($block['type'] ?? 'text') === 'text'
+        ));
+        ?>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row"><?php echo esc_html__('Logo', 'project-reviews'); ?></th>
+                <td>
+                    <input type="hidden"
+                        name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][letterhead][blocks][0][type]"
+                        value="image" />
+                    <input type="hidden" id="pr-pdf-logo-id"
+                        name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][letterhead][blocks][0][attachment_id]"
+                        value="<?php echo esc_attr((string) $logo_attachment); ?>" />
+                    <button type="button" class="button" id="pr-pdf-logo-select">
+                        <?php echo esc_html__('Select logo', 'project-reviews'); ?>
+                    </button>
+                    <button type="button" class="button" id="pr-pdf-logo-clear">
+                        <?php echo esc_html__('Remove', 'project-reviews'); ?>
+                    </button>
+                    <div id="pr-pdf-logo-preview" style="margin-top:8px;">
+                        <?php if ($logo_attachment > 0) : ?>
+                            <?php echo wp_get_attachment_image($logo_attachment, 'medium'); ?>
+                        <?php endif; ?>
+                    </div>
+                    <p>
+                        <label for="pr-pdf-logo-width">
+                            <?php echo esc_html__('Logo width (inches)', 'project-reviews'); ?>
+                        </label>
+                        <input type="number" step="0.1" min="0.5" max="8" class="small-text"
+                            id="pr-pdf-logo-width"
+                            name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][letterhead][blocks][0][width_in]"
+                            value="<?php echo esc_attr((string) $logo_width); ?>" />
+                    </p>
+                </td>
+            </tr>
+        </table>
+
+        <h3><?php echo esc_html__('Letterhead text', 'project-reviews'); ?></h3>
+        <p class="description">
+            <?php echo esc_html__('First two lines are typically department and school names. Add more lines as needed.', 'project-reviews'); ?>
+        </p>
+        <div id="pr-letterhead-blocks">
+            <?php
+            if ($text_blocks === []) {
+                $text_blocks = [
+                    ['type' => 'text', 'value' => '', 'style' => 'title', 'label' => ''],
+                    ['type' => 'text', 'value' => '', 'style' => 'subtitle', 'label' => ''],
+                ];
+            }
+            foreach ($text_blocks as $index => $block) :
+                self::render_letterhead_text_row($option_key, $index + 1, $block);
+            endforeach;
+            ?>
+        </div>
+        <p>
+            <button type="button" class="button" id="pr-letterhead-add">
+                <?php echo esc_html__('Add letterhead line', 'project-reviews'); ?>
+            </button>
+        </p>
+
+        <h3><?php echo esc_html__('Scores table', 'project-reviews'); ?></h3>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row"><?php echo esc_html__('Columns', 'project-reviews'); ?></th>
+                <td>
+                    <input type="hidden"
+                        name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][show_sr_no]"
+                        value="1" />
+                    <label>
+                        <input type="checkbox"
+                            name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][show_attendance]"
+                            value="1" <?php checked(!isset($table['show_attendance']) || !empty($table['show_attendance'])); ?> />
+                        <?php echo esc_html__('Attendance column', 'project-reviews'); ?>
+                    </label>
+                    <br />
+                    <label>
+                        <input type="checkbox"
+                            name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][show_project_title]"
+                            value="1" <?php checked(!isset($table['show_project_title']) || !empty($table['show_project_title'])); ?> />
+                        <?php echo esc_html__('Project title column', 'project-reviews'); ?>
+                    </label>
+                    <br />
+                    <label>
+                        <input type="checkbox"
+                            name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][show_guide_name]"
+                            value="1" <?php checked(!empty($table['show_guide_name'])); ?> />
+                        <?php echo esc_html__('Guide name column', 'project-reviews'); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-pdf-attendance-header">
+                        <?php echo esc_html__('Attendance header', 'project-reviews'); ?>
+                    </label>
+                </th>
+                <td>
+                    <input type="text" class="regular-text" id="pr-pdf-attendance-header"
+                        name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][attendance_column_header]"
+                        value="<?php echo esc_attr((string) ($table['attendance_column_header'] ?? 'Attendance')); ?>" />
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-pdf-project-field">
+                        <?php echo esc_html__('Project title field key', 'project-reviews'); ?>
+                    </label>
+                </th>
+                <td>
+                    <input type="text" class="regular-text" id="pr-pdf-project-field"
+                        name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][project_title_field_key]"
+                        value="<?php echo esc_attr((string) ($table['project_title_field_key'] ?? 'project_title')); ?>" />
+                    <p class="description">
+                        <?php echo esc_html__(
+                            'Registry custom field key when per-review project title is empty (default: project_title).',
+                            'project-reviews'
+                        ); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-pdf-guide-header">
+                        <?php echo esc_html__('Guide column header', 'project-reviews'); ?>
+                    </label>
+                </th>
+                <td>
+                    <input type="text" class="regular-text" id="pr-pdf-guide-header"
+                        name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][guide_column_header]"
+                        value="<?php echo esc_attr((string) ($table['guide_column_header'] ?? 'Guide')); ?>" />
+                </td>
+            </tr>
+        </table>
+
+        <h3><?php echo esc_html__('Signatures', 'project-reviews'); ?></h3>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row"><?php echo esc_html__('Panel coordinator', 'project-reviews'); ?></th>
+                <td>
+                    <label>
+                        <input type="checkbox"
+                            name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][signatures][show_panel_coordinator_line]"
+                            value="1" <?php checked(!isset($signatures['show_panel_coordinator_line']) || !empty($signatures['show_panel_coordinator_line'])); ?> />
+                        <?php echo esc_html__(
+                            'Show panel coordinator line when not in reviewer roster',
+                            'project-reviews'
+                        ); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-pdf-hod-label">
+                        <?php echo esc_html__('Head of department label', 'project-reviews'); ?>
+                    </label>
+                </th>
+                <td>
+                    <input type="hidden"
+                        name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][signatures][hod][enabled]"
+                        value="1" />
+                    <input type="text" class="regular-text" id="pr-pdf-hod-label"
+                        name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][signatures][hod][label]"
+                        value="<?php echo esc_attr((string) ($hod['label'] ?? 'Head of the Department')); ?>" />
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-pdf-hod-name">
+                        <?php echo esc_html__('Head of department name', 'project-reviews'); ?>
+                    </label>
+                </th>
+                <td>
+                    <input type="text" class="regular-text" id="pr-pdf-hod-name"
+                        name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][signatures][hod][name]"
+                        value="<?php echo esc_attr((string) ($hod['name'] ?? '')); ?>" />
+                </td>
+            </tr>
+        </table>
+
+        <input type="hidden"
+            name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][report][title]"
+            value="Review Report" />
+        <input type="hidden"
+            name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][report][show_review_number]"
+            value="1" />
+        <input type="hidden"
+            name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][report][show_panel_name]"
+            value="1" />
+        <input type="hidden"
+            name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][report][show_reviewers_list]"
+            value="1" />
+        <?php
+    }
+
+    /**
+     * @param array<string, mixed> $block
+     */
+    private static function render_letterhead_text_row(string $option_key, int $index, array $block): void
+    {
+        $base = $option_key . '[panel_report_pdf][letterhead][blocks][' . $index . ']';
+        $style = (string) ($block['style'] ?? 'body');
+        ?>
+        <div class="pr-letterhead-row" style="margin-bottom:12px;padding:12px;border:1px solid #ccd0d4;background:#fff;">
+            <input type="hidden" name="<?php echo esc_attr($base); ?>[type]" value="text" />
+            <p>
+                <label><?php echo esc_html__('Text', 'project-reviews'); ?></label><br />
+                <input type="text" class="large-text"
+                    name="<?php echo esc_attr($base); ?>[value]"
+                    value="<?php echo esc_attr((string) ($block['value'] ?? '')); ?>" />
+            </p>
+            <p>
+                <label><?php echo esc_html__('Style', 'project-reviews'); ?></label>
+                <select name="<?php echo esc_attr($base); ?>[style]">
+                    <option value="title" <?php selected($style, 'title'); ?>><?php echo esc_html__('Title', 'project-reviews'); ?></option>
+                    <option value="subtitle" <?php selected($style, 'subtitle'); ?>><?php echo esc_html__('Subtitle', 'project-reviews'); ?></option>
+                    <option value="body" <?php selected($style, 'body'); ?>><?php echo esc_html__('Body', 'project-reviews'); ?></option>
+                </select>
+                <button type="button" class="button-link-delete pr-letterhead-remove" style="margin-left:12px;">
+                    <?php echo esc_html__('Remove', 'project-reviews'); ?>
+                </button>
+            </p>
+        </div>
+        <?php
+    }
+
+    private static function inline_script(): string
+    {
+        $option_key = PluginSettings::OPTION_KEY;
+
+        return <<<JS
+jQuery(function ($) {
+  var frame;
+  $('#pr-pdf-logo-select').on('click', function (e) {
+    e.preventDefault();
+    if (frame) {
+      frame.open();
+      return;
+    }
+    frame = wp.media({
+      title: 'Select logo',
+      button: { text: 'Use logo' },
+      multiple: false
+    });
+    frame.on('select', function () {
+      var attachment = frame.state().get('selection').first().toJSON();
+      $('#pr-pdf-logo-id').val(attachment.id);
+      $('#pr-pdf-logo-preview').html(
+        attachment.sizes && attachment.sizes.medium
+          ? '<img src="' + attachment.sizes.medium.url + '" />'
+          : '<img src="' + attachment.url + '" />'
+      );
+    });
+    frame.open();
+  });
+  $('#pr-pdf-logo-clear').on('click', function (e) {
+    e.preventDefault();
+    $('#pr-pdf-logo-id').val('0');
+    $('#pr-pdf-logo-preview').empty();
+  });
+
+  $('#pr-copy-reviews-url').on('click', function () {
+    var input = document.getElementById('pr-reviews-entry-url');
+    if (!input) {
+      return;
+    }
+    input.select();
+    input.setSelectionRange(0, 99999);
+    try {
+      document.execCommand('copy');
+    } catch (err) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(input.value);
+      }
+    }
+  });
+
+  var blockIndex = $('#pr-letterhead-blocks .pr-letterhead-row').length;
+  $('#pr-letterhead-add').on('click', function () {
+    blockIndex += 1;
+    var base = '{$option_key}[panel_report_pdf][letterhead][blocks][' + blockIndex + ']';
+    var html = '<div class="pr-letterhead-row" style="margin-bottom:12px;padding:12px;border:1px solid #ccd0d4;background:#fff;">' +
+      '<input type="hidden" name="' + base + '[type]" value="text" />' +
+      '<p><label>Text</label><br /><input type="text" class="large-text" name="' + base + '[value]" value="" /></p>' +
+      '<p><label>Style</label> <select name="' + base + '[style]">' +
+      '<option value="title">Title</option><option value="subtitle">Subtitle</option>' +
+      '<option value="body" selected>Body</option></select> ' +
+      '<button type="button" class="button-link-delete pr-letterhead-remove" style="margin-left:12px;">Remove</button></p>' +
+      '</div>';
+    $('#pr-letterhead-blocks').append(html);
+  });
+  $('#pr-letterhead-blocks').on('click', '.pr-letterhead-remove', function () {
+    $(this).closest('.pr-letterhead-row').remove();
+  });
+
+  var backupBtn = $('#pr-download-full-backup');
+  var backupStatus = $('#pr-backup-status');
+  if (backupBtn.length && window.prAdminSettings && window.prAdminSettings.backupUrl) {
+    backupBtn.on('click', function () {
+      backupBtn.prop('disabled', true);
+      backupStatus.text('Preparing backup…');
+      fetch(window.prAdminSettings.backupUrl, {
+        credentials: 'same-origin',
+        headers: { 'X-WP-Nonce': window.prAdminSettings.restNonce }
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            return response.json().then(function (payload) {
+              throw new Error((payload && payload.message) || 'Backup failed.');
+            });
+          }
+          var disposition = response.headers.get('Content-Disposition') || '';
+          var match = disposition.match(/filename="([^"]+)"/);
+          var filename = match ? match[1] : 'project-reviews-backup.zip';
+          return response.blob().then(function (blob) {
+            return { blob: blob, filename: filename };
+          });
+        })
+        .then(function (result) {
+          var url = URL.createObjectURL(result.blob);
+          var link = document.createElement('a');
+          link.href = url;
+          link.download = result.filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          backupStatus.text('Download started.');
+        })
+        .catch(function (err) {
+          backupStatus.text(err.message || 'Backup failed.');
+        })
+        .finally(function () {
+          backupBtn.prop('disabled', false);
+        });
+    });
+  }
+});
+JS;
+    }
+}

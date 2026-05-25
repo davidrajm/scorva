@@ -1,0 +1,11 @@
+reg_no,name,program,batch,panel,project_title,guide_emp_id,guide_name
+25MDT1001,Alex Morgan,MSC-DS,MSC-DS-2025-S1,Panel A,Machine Learning for Healthcare,EMP001,Dr. Anita Patel
+25MDT1002,Jordan Lee,MSC-DS,MSC-DS-2025-S1,Panel A,Data Pipeline Optimization,EMP002,Dr. James Chen
+25MDT1003,Samira Khan,MSC-DS,MSC-DS-2025-S1,Panel A,IoT Sensor Analytics,EMP003,Dr. Sarah Okonkwo
+25MDT1004,Chris Ortiz,MSC-DS,MSC-DS-2025-S1,Panel A,Cloud-Native Microservices,EMP004,Dr. Michael Torres
+25MDT1005,Taylor Brooks,MSC-DS,MSC-DS-2025-S1,Panel A,NLP for Clinical Notes,EMP005,Dr. Emily Nakamura
+25MDT1006,Morgan Patel,MSC-DS,MSC-DS-2025-S2,Panel B,Computer Vision for Quality Control,EMP006,Dr. David Kim
+25MDT1007,Riley Chen,MSC-DS,MSC-DS-2025-S2,Panel B,Time-Series Forecasting Platform,EMP007,Dr. Lisa Andersson
+25MDT1008,Casey Nguyen,MSC-DS,MSC-DS-2025-S2,Panel B,Blockchain Supply Chain Tracker,EMP008,Dr. Raj Mehta
+25MDT1009,Jamie Wilson,MSC-DS,MSC-DS-2025-S2,Panel B,Edge AI for Smart Campus,EMP009,Dr. Fiona O'Brien
+25MDT1010,Quinn Davis,MSC-DS,MSC-DS-2025-S2,Panel B,Recommender System for Library Catalog,EMP010,Dr. Hassan Al-Rashid

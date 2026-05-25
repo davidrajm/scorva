@@ -1,0 +1,590 @@
+/**
+ * Project Reviews design tokens — Visual Design Foundation (UX spec).
+ * Scoped for shell load; Tailwind maps these via var(--pr-*).
+ */
+:root,
+#pr-root {
+	--pr-color-primary: #1e4d6b;
+	--pr-color-primary-hover: #163a52;
+	--pr-color-surface: #f6f8fa;
+	--pr-color-surface-raised: #ffffff;
+	--pr-color-border: #d0d7de;
+	--pr-color-text: #1f2328;
+	--pr-color-text-muted: #656d76;
+	--pr-color-success: #1a7f37;
+	--pr-color-warning: #9a6700;
+	--pr-color-danger: #cf222e;
+	--pr-color-info: #0969da;
+	--pr-chip-draft-bg: #eaeef2;
+	--pr-chip-draft-text: #656d76;
+	--pr-chip-active-bg: #e8eff3;
+	--pr-chip-active-text: #1e4d6b;
+	--pr-chip-closed-bg: #eaeef2;
+	--pr-chip-closed-text: #656d76;
+	--pr-chip-confirmed-bg: #dafbe1;
+	--pr-chip-confirmed-text: #1a7f37;
+	--pr-chip-unlocked-bg: #fff8c5;
+	--pr-chip-unlocked-text: #9a6700;
+	--pr-chip-flagged-bg: #fff8c5;
+	--pr-chip-flagged-text: #9a6700;
+	--pr-chip-coordinator-bg: #ddf4ff;
+	--pr-chip-coordinator-text: #0969da;
+	--pr-radius-md: 8px;
+	--pr-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+	--pr-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	--pr-layout-topbar-height: 56px;
+	--pr-layout-sidebar-width: 240px;
+	--pr-layout-sidebar-collapsed-width: 56px;
+	--pr-layout-content-max-width: 1280px;
+	--pr-scrollbar-thumb: var(--pr-color-border);
+	--pr-scrollbar-track: transparent;
+	--pr-table-row-height-comfortable: 3rem;
+	--pr-table-row-height-dense: 3.5rem;
+	--pr-table-row-height: var(--pr-table-row-height-comfortable);
+	--pr-table-header-height: 3rem;
+	--pr-table-visible-rows: 10;
+}
+
+/* Shell base — Direction 1 Structured Academic */
+body.pr-app-shell {
+	margin: 0;
+	font-family: var(--pr-font-family);
+	font-size: 16px;
+	line-height: 1.5;
+	color: var(--pr-color-text);
+	background: var(--pr-color-surface);
+	overflow: hidden;
+}
+
+#pr-root {
+	height: 100vh;
+	min-height: 100vh;
+	box-sizing: border-box;
+	overflow: hidden;
+}
+
+#pr-root *,
+#pr-root *::before,
+#pr-root *::after {
+	box-sizing: border-box;
+}
+
+.pr-shell {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	min-height: 100vh;
+	overflow: hidden;
+}
+
+.pr-topbar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 100;
+	height: var(--pr-layout-topbar-height);
+	padding: 0 24px;
+	background: var(--pr-color-surface-raised);
+	border-bottom: 1px solid var(--pr-color-border);
+}
+
+.pr-topbar-inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	width: 100%;
+	height: 100%;
+	min-width: 0;
+}
+
+.pr-topbar-start {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	min-width: 0;
+	flex: 1;
+}
+
+.pr-topbar-nav {
+	flex-shrink: 0;
+}
+
+.pr-topbar-actions {
+	margin-left: auto;
+}
+
+.pr-sidebar-menu-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: 1px solid var(--pr-color-border);
+	border-radius: var(--pr-radius-md);
+	background: var(--pr-color-surface);
+	color: var(--pr-color-text);
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.pr-sidebar-menu-btn:hover {
+	background: var(--pr-color-surface-raised);
+}
+
+.pr-sidebar-menu-btn:focus-visible {
+	outline: 2px solid var(--pr-color-primary);
+	outline-offset: 2px;
+}
+
+.pr-user-identity {
+	max-width: min(280px, 40vw);
+}
+
+.pr-wordmark {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 600;
+	line-height: 1.35;
+	color: var(--pr-color-primary);
+}
+
+.pr-body {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	padding-top: var(--pr-layout-topbar-height);
+	min-width: 0;
+	overflow: hidden;
+}
+
+.pr-sidebar {
+	position: relative;
+	flex: 0 0 var(--pr-layout-sidebar-width);
+	width: var(--pr-layout-sidebar-width);
+	min-height: 0;
+	padding: 0;
+	background: var(--pr-color-surface-raised);
+	border-right: 1px solid var(--pr-color-border);
+	flex-shrink: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	transition: width 0.15s ease;
+}
+
+.pr-sidebar--collapsed {
+	flex-basis: var(--pr-layout-sidebar-collapsed-width);
+	width: var(--pr-layout-sidebar-collapsed-width);
+}
+
+.pr-sidebar-inner {
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
+}
+
+.pr-sidebar-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	flex-shrink: 0;
+	padding: 8px;
+	border-bottom: 1px solid var(--pr-color-border);
+}
+
+.pr-sidebar-collapse-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: none;
+	border-radius: var(--pr-radius-md);
+	background: transparent;
+	color: var(--pr-color-text-muted);
+	cursor: pointer;
+}
+
+.pr-sidebar-collapse-btn:hover {
+	background: var(--pr-color-surface);
+	color: var(--pr-color-text);
+}
+
+.pr-sidebar-collapse-btn:focus-visible {
+	outline: 2px solid var(--pr-color-primary);
+	outline-offset: 2px;
+}
+
+.pr-sidebar-resize-handle {
+	position: absolute;
+	top: 0;
+	right: 0;
+	z-index: 2;
+	width: 4px;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	border: none;
+	background: transparent;
+	cursor: col-resize;
+	touch-action: none;
+}
+
+.pr-sidebar-resize-handle::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -4px;
+	width: 12px;
+}
+
+.pr-sidebar-resize-handle:hover,
+.pr-sidebar-resize-handle:focus-visible {
+	background: var(--pr-color-border);
+}
+
+.pr-sidebar-resize-handle:focus-visible {
+	outline: 2px solid var(--pr-color-primary);
+	outline-offset: -2px;
+}
+
+.pr-sidebar--collapsed .pr-sidebar-resize-handle,
+.pr-sidebar--drawer .pr-sidebar-resize-handle {
+	display: none;
+}
+
+.pr-sidebar-backdrop {
+	display: none;
+}
+
+.pr-main {
+	flex: 1;
+	width: 100%;
+	min-width: 0;
+	max-width: var(--pr-layout-content-max-width);
+	margin: 0 auto;
+	padding: 24px;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	scrollbar-gutter: stable;
+}
+
+/* Sticky table headers stick to the top of the main scroll region (below top bar). */
+.pr-main table thead.sticky {
+	position: sticky;
+	top: 0;
+	z-index: 30;
+}
+
+#pr-root[data-app="reviewer"] .pr-body,
+#pr-root[data-app="landing"] .pr-body {
+	display: block;
+}
+
+#pr-root[data-app="reviewer"] .pr-main,
+#pr-root[data-app="landing"] .pr-main {
+	max-width: 100%;
+}
+
+#pr-root[data-app="reviewer"] .pr-main {
+	max-width: 100%;
+}
+
+/* Styled scrollbars — shell + table regions */
+.pr-scroll {
+	scrollbar-width: thin;
+	scrollbar-color: var(--pr-scrollbar-thumb) var(--pr-scrollbar-track);
+}
+
+.pr-scroll::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+.pr-scroll::-webkit-scrollbar-thumb {
+	background: var(--pr-scrollbar-thumb);
+	border-radius: 4px;
+}
+
+.pr-scroll::-webkit-scrollbar-thumb:hover {
+	background: var(--pr-color-text-muted);
+}
+
+.pr-scroll::-webkit-scrollbar-track {
+	background: var(--pr-scrollbar-track);
+}
+
+.pr-sidebar.pr-scroll,
+.pr-main.pr-scroll {
+	/* Applied via className in JSX */
+}
+
+/* Dual-axis table viewport */
+.pr-table-viewport-host {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+	min-width: 0;
+}
+
+.pr-table-viewport-toolbar {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.pr-table-viewport-helper {
+	margin: 0;
+	flex: 1;
+	min-width: 0;
+	font-size: 13px;
+	color: var(--pr-color-text-muted);
+}
+
+.pr-table-viewport-actions {
+	display: flex;
+	flex-shrink: 0;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.pr-table-viewport-toggle {
+	padding: 6px 12px;
+	border: 1px solid var(--pr-color-border);
+	border-radius: var(--pr-radius-md);
+	background: var(--pr-color-surface-raised);
+	color: var(--pr-color-text);
+	font-family: var(--pr-font-family);
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 1.35;
+	cursor: pointer;
+}
+
+.pr-table-viewport-toggle:hover {
+	background: var(--pr-color-surface);
+}
+
+.pr-table-viewport-toggle:focus-visible {
+	outline: 2px solid var(--pr-color-primary);
+	outline-offset: 2px;
+}
+
+.pr-table-viewport-toggle:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Progressive row window — inner scroll; page scroll stays on .pr-main */
+.pr-table-data-viewport {
+	overflow-x: auto;
+	overflow-y: auto;
+	overscroll-behavior-x: contain;
+	max-height: calc(
+		var(--pr-table-header-height) + var(--pr-table-visible-rows, 10) *
+			var(--pr-table-row-height)
+	);
+}
+
+.pr-table-data-viewport--show-all {
+	max-height: none;
+	overflow-y: visible;
+}
+
+.pr-table-scroll {
+	position: relative;
+}
+
+.pr-table-scroll--cue-right::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 24px;
+	pointer-events: none;
+	background: linear-gradient(
+		to left,
+		var(--pr-color-surface-raised) 0%,
+		transparent 100%
+	);
+	z-index: 35;
+}
+
+.pr-table-scroll--cue-left::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	width: 24px;
+	pointer-events: none;
+	background: linear-gradient(
+		to right,
+		var(--pr-color-surface-raised) 0%,
+		transparent 100%
+	);
+	z-index: 35;
+}
+
+body.pr-sidebar-resizing {
+	user-select: none;
+}
+
+body.pr-sidebar-resizing * {
+	cursor: col-resize !important;
+}
+
+/* Coordinator drawer — mobile-first default (< lg); desktop overrides below */
+#pr-root[data-app="coordinator"] .pr-sidebar {
+	position: fixed;
+	top: var(--pr-layout-topbar-height);
+	left: 0;
+	bottom: 0;
+	z-index: 90;
+	width: min(280px, 85vw);
+	flex-basis: auto;
+	transform: translateX(-100%);
+	transition: transform 0.2s ease;
+	box-shadow: var(--pr-shadow-card);
+}
+
+#pr-root[data-app="coordinator"] .pr-sidebar.pr-sidebar--drawer-open {
+	transform: translateX(0);
+}
+
+#pr-root[data-app="coordinator"] .pr-sidebar--collapsed {
+	width: min(280px, 85vw);
+	flex-basis: auto;
+}
+
+.pr-sidebar-backdrop {
+	display: block;
+	position: fixed;
+	inset: 0;
+	top: var(--pr-layout-topbar-height);
+	z-index: 80;
+	border: none;
+	padding: 0;
+	margin: 0;
+	background: rgba(31, 35, 40, 0.4);
+	cursor: pointer;
+}
+
+.pr-sidebar-backdrop[hidden] {
+	display: none;
+}
+
+#pr-root[data-app="coordinator"] .pr-sidebar-toolbar {
+	display: none;
+}
+
+@media (min-width: 1024px) {
+	.pr-sidebar-menu-btn {
+		display: none !important;
+	}
+
+	#pr-root[data-app="coordinator"] .pr-sidebar {
+		position: relative;
+		top: auto;
+		left: auto;
+		bottom: auto;
+		z-index: auto;
+		width: var(--pr-layout-sidebar-width);
+		flex: 0 0 var(--pr-layout-sidebar-width);
+		flex-basis: var(--pr-layout-sidebar-width);
+		transform: none;
+		box-shadow: none;
+	}
+
+	#pr-root[data-app="coordinator"] .pr-sidebar.pr-sidebar--drawer-open {
+		transform: none;
+	}
+
+	#pr-root[data-app="coordinator"] .pr-sidebar--collapsed {
+		flex-basis: var(--pr-layout-sidebar-collapsed-width);
+		width: var(--pr-layout-sidebar-collapsed-width);
+	}
+
+	.pr-sidebar-backdrop {
+		display: none;
+	}
+
+	#pr-root[data-app="coordinator"] .pr-sidebar-toolbar {
+		display: flex;
+	}
+}
+
+.pr-icon-rail-anchor {
+	display: block;
+	position: relative;
+}
+
+/* Portaled to body — must not rely on Tailwind (#pr-root important scope). */
+.pr-icon-rail-tooltip {
+	position: fixed;
+	z-index: 200;
+	pointer-events: none;
+	margin: 0;
+	white-space: nowrap;
+	padding: 6px 10px;
+	font-family: var(--pr-font-family);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 1.4;
+	color: var(--pr-color-text);
+	background: var(--pr-color-surface-raised);
+	border: 1px solid var(--pr-color-border);
+	border-radius: var(--pr-radius-md);
+	box-shadow: var(--pr-shadow-card);
+	transform: translateY(-50%);
+}
+
+.pr-skip-link {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Skeleton pulse — respect reduced motion (story 19-1, NFR13) */
+@media (prefers-reduced-motion: reduce) {
+	#pr-root .pr-skeleton-pulse,
+	#pr-root .animate-pulse {
+		animation: none !important;
+	}
+}
+
+.pr-skip-link:focus {
+	position: fixed;
+	top: 8px;
+	left: 8px;
+	z-index: 200;
+	width: auto;
+	height: auto;
+	padding: 12px 16px;
+	margin: 0;
+	overflow: visible;
+	clip: auto;
+	white-space: normal;
+	font-weight: 600;
+	color: #ffffff;
+	background: var(--pr-color-primary);
+	border-radius: var(--pr-radius-md);
+	outline: 2px solid var(--pr-color-primary-hover);
+	outline-offset: 2px;
+}

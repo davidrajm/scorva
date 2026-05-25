@@ -1,0 +1,12 @@
+# BMM module — Project Reviews plugin (standalone from david-sas theme)
+
+project_name: Project Reviews
+user_name: BMad
+communication_language: English
+document_output_language: English
+user_skill_level: intermediate
+
+output_folder: /Users/davidrm/Documents/mysites/sastt/app/public/wp-content/plugins/project-reviews/_bmad-output
+planning_artifacts: /Users/davidrm/Documents/mysites/sastt/app/public/wp-content/plugins/project-reviews/_bmad-output/planning
+implementation_artifacts: /Users/davidrm/Documents/mysites/sastt/app/public/wp-content/plugins/project-reviews/_bmad-output/implementation
+project_knowledge: /Users/davidrm/Documents/mysites/sastt/app/public/wp-content/themes/david-sas/docs/superpowers

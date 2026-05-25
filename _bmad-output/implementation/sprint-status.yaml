@@ -1,0 +1,240 @@
+# generated: 2026-05-16
+# last_updated: 2026-05-25
+# Story 22-1 ready-for-dev 2026-05-25 — Reviews link in site menu on activation; cross-theme nav bootstrap
+# Story 21-1 ready-for-dev 2026-05-25 — coordinator mark override + shuttle marking (UI, cap, distinct from flagged)
+# Story 20-1 ready-for-dev 2026-05-24 — configurable app branding; default Scorva: The Review Management System
+# Story 19-1 ready-for-dev 2026-05-24 — route/tab navigation loading; eliminate flicker (skeletons, stale-while-revalidate)
+# Story 11-2 review 2026-05-24 — panel report settings WYSIWYG report-layout preview
+# Story 11-2 ready-for-dev 2026-05-24 — panel report settings WYSIWYG report-layout preview
+# Story 18-1 ready-for-dev 2026-05-24 — mobile-first CSS / media-query audit (app-shell + Tailwind inventory)
+# Story 17-1 ready-for-dev 2026-05-24 — dashboard status tabs (icons, URL ?status=, Active default)
+# Story 8-4 ready-for-dev 2026-05-23 — delete project cascade + review-style confirmations
+# Story 1-11 ready-for-dev 2026-05-22 — table viewport minimum 10 visible rows when space allows; row-height calibration
+# Story 16-1 ready-for-dev 2026-05-21 — ZIP backup: plugin SQL + per-project Excel reports
+# Story 15-1 ready-for-dev 2026-05-21 — E2E harness, teardown, SOP screenshots (dated folders + Typst sop-screenshots-dir)
+# Story 14-1 ready-for-dev 2026-05-20 — global faculty reviewer pool, directory sync, bulk invite on open review
+# Story 8-3 review 2026-05-20 — reopen closed project; restore status, re-enable disabled accounts, audit
+# Story 13-2 ready-for-dev 2026-05-20 — rubric criteria zero max_marks validation, form UX, total marks
+# Epic 13 + Story 13-1 ready-for-dev 2026-05-20 — coordinator Reviews/Rubrics IA consolidation (wizard vs sidebar)
+# Story 12-8 ready-for-dev 2026-05-20 — consolidated XLSX borders, muted banding by review/reviewer groups
+# Story 12-7 review 2026-05-20 — fix reviewer panel report blank page (ReportsScoresTable rows ReferenceError)
+# Story 12-6 ready-for-dev 2026-05-19 — consolidated XLSX alignment, hierarchy, project metadata header
+# Story 1-10 review 2026-05-19 — progressive 5-row table viewport, Add 5 more / Show all, fix page scroll lock
+# Story 1-9 ready-for-dev 2026-05-18 — scroll regions, styled scrollbars, collapsible/resizable sidebar, table wrappers
+# Story 12-5 ready-for-dev 2026-05-18 — reports URL tab/review query params; remove legacy downloads; canonical Downloads catalog
+# Epic 12 ready-for-dev 2026-05-18 — reports panel context live views; substories 12-2..12-4 review; 12-5 ready-for-dev
+# Story 7-10 review 2026-05-18 — reports score cells empty when absent/no score; no literal "draft" in exports
+# Story 6-7 ready-for-dev 2026-05-18 — raw-sum reviewer totals; weighted avg across reviewers; no rubric weights
+# Story 2-5 ready-for-dev 2026-05-17 — per-project guide on enrolment; registry program field; remove guide/panel from All Students
+# Story 3-13 ready-for-dev 2026-05-17 — wizard Students step roster UX, All Students gate, tab WizardNav
+# Story 1-8 ready-for-dev 2026-05-17 — plugin deactivation (preserve data) and opt-in uninstall wipe
+# Story 1-7 ready-for-dev 2026-05-17 — shared /reviews/ login landing and workspace routing
+# Story 3-12 ready-for-dev 2026-05-17 — student project title per review, re-enrol CSV, assignments Save, score-guarded removal
+# Story 5-18 ready-for-dev 2026-05-17 — review coordinator freeze when all panels frozen; unlock; marking_active sync; block attendance when locked
+# Story 5-17 ready-for-dev 2026-05-17 — coordinator attendance correction when unanimous reviewer consensus blocks change
+# Story 5-16 ready-for-dev 2026-05-17 — reviewer login/logout header, route guard, nav links
+# Story 5-15 ready-for-dev 2026-05-17 — panel unfreeze requests; reviewer unfreeze → panel head; panel unfreeze → coordinator
+# Story 5-14 ready-for-dev 2026-05-17 — review-level attendance consensus validation on score update
+# Story 7-9 ready-for-dev 2026-05-17 — overall scores tab: panel-slot matrix parity with rubric marks (no per-rubric cells)
+# Story 7-8 ready-for-dev 2026-05-17 — reports marks: show draft scores, panel-scoped reviewer slot columns
+# Story 7-7 ready-for-dev 2026-05-17 — fix REST JSON wrapping of xlsx/csv/pdf export bodies
+# Story 11-1 Part A shipped 2026-05-17; Part B ready-for-dev 2026-05-17 — institutional Review Report PDF template (letterhead, columns, signatures)
+# Story 5-13 ready-for-dev 2026-05-17 — assignment card co-reviewer chips below panel name
+# Story 5-12 ready-for-dev 2026-05-17 — table/grid row hover (marking grid, RubricForm, coordinator tables)
+# Story 5-11 review 2026-05-17 — marking grid mobile student cards, desktop grid at lg+
+# Story 5-10 ready-for-dev 2026-05-17 — mark score input step 0.5 (half-point increment)
+# Story 10-1 ready-for-dev 2026-05-17 — user-facing session → project terminology
+# Story 6-5 ready-for-dev 2026-05-17 — student-grain progress, per-review tables, overall radial summary
+# Story 6-6 ready-for-dev 2026-05-17 — progress mark-grain summary %, review/panel accordions, expand controls
+# Story 7-6 ready-for-dev 2026-05-17 — reports marks matrix dual layout, sort, weighted score, export
+# Story 7-5 ready-for-dev 2026-05-17 — reports live tables, nav polish, coordinator marks lock
+# Story 5-9 ready-for-dev 2026-05-17 — reviewer identity topbar, assignment cards, button icons, student #
+# project: Project Reviews
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation
+#
+# Marking grain (canonical): for each project (session) × review × rubric (criterion)
+# × reviewer × student → one score in pr_marks (flat export: pr_rubric_scores).
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+generated: '2026-05-16'
+last_updated: '2026-05-25'  # Story 21-1 review — coordinator mark override + shuttle marking
+# Story 5-7 ready-for-dev 2026-05-17
+# Story 7-3 validated 2026-05-17 — session nav + RestReportsTest + build
+# Story 4-6 added 2026-05-17 — per-review rubric wizard + lock on has_marks
+# Story 4-7 added 2026-05-17 — delete rubric criteria rows + review rounds in UI
+# Story 3-9 added 2026-05-17 — panel reviewers dense table + add form above import
+# Story 3-10 added 2026-05-17 — wizard panel edit/delete; guard when students assigned
+# Story 3-11 added 2026-05-17 — per-review assignments + marking_active for reviewer login
+# Story 5-6 added 2026-05-17 — reviewer marking grid, deep links, save-only, per-review freeze
+# Story 5-7 added 2026-05-17 — per-review student attendance present/absent, null scores when absent
+# Story 5-8 ready-for-dev 2026-05-17 — reviewer unfreeze request + coordinator dashboard grant
+project: Project Reviews
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation
+
+development_status:
+  epic-1: in-progress
+  1-1-plugin-scaffold: done
+  1-2-capabilities: review
+  1-3-rest-auth: review
+  1-4-front-end-routes: review
+  1-5-design-tokens: review
+  1-6-react-spas: review
+  1-7-shared-login-landing-routing: review
+  1-8-plugin-deactivation-uninstall: review
+  1-9-app-shell-scroll-regions: review
+  1-10-table-viewport-progressive-rows: review
+  1-11-table-viewport-minimum-ten-rows: review
+  epic-1-retrospective: optional
+  epic-2: in-progress
+  2-1-student-registry-tables: review
+  2-2-student-registry-rest: review
+  2-3-registry-ui: review
+  2-4-csv-student-import: review
+  2-5-per-project-guide-panel-enrolment: review
+  epic-2-retrospective: optional
+  epic-3: in-progress
+  3-1-session-database-tables: review
+  3-2-sessions-rest-dashboard: review
+  3-3-wizard-students-enrolment: review
+  3-4-wizard-panels: review
+  3-5-wizard-reviewers-provisioning: review
+  3-6-resend-credentials-linking: review
+  3-7-wizard-review-rounds: done
+  3-8-project-default-student-roster: review
+  3-9-panel-reviewers-dense-roster-ui: review
+  3-10-wizard-panel-edit-delete: review
+  3-11-per-review-assignments-marking-active: review
+  3-12-student-project-title-per-review: review
+  3-13-wizard-students-step-roster-ux: review
+  epic-3-retrospective: optional
+  epic-4: in-progress
+  4-1-rubric-lifecycle-rest: review
+  4-2-rubric-builder-ui: review
+  4-3-rubric-confirm-dialog: review
+  4-4-weight-configuration: review
+  4-5-flagged-marks-visibility: review
+  4-6-per-review-rubric-until-scoring: review
+  4-7-delete-rubric: review
+  epic-4-retrospective: optional
+  epic-5: in-progress
+  5-1-marks-persistence-guards: review
+  5-2-marks-rest-scoping: review
+  5-3-reviewer-assignments-ui: review
+  5-4-rubric-form: review
+  5-5-blocked-state-messaging: review
+  5-6-reviewer-marking-grid-freeze: review
+  5-7-student-attendance-marking: review
+  5-8-unfreeze-score-requests: review
+  5-9-reviewer-page-ui-polish: review
+  5-10-mark-score-half-point-increment: review
+  5-11-reviewer-marking-grid-mobile-cards: review
+  5-12-table-row-hover-effects: review
+  5-13-assignment-card-co-reviewer-chips: review
+  5-14-review-attendance-consensus-validation: review
+  5-15-unfreeze-panel-scores-panel-head-routing: review
+  5-16-reviewer-header-auth-route-guard: review
+  5-17-attendance-consensus-correction: review
+  5-18-review-coordinator-freeze-unlock: review
+  epic-5-retrospective: optional
+  epic-6: in-progress
+  6-1-score-service: review
+  6-2-scores-rest: review
+  6-3-progress-table-ui: review
+  6-4-score-breakdown: review
+  6-5-progress-student-grain-dual-views: review
+  6-6-progress-accordion-mark-grain-summary: review
+  6-7-validating-scores: review
+  epic-6-retrospective: optional
+  epic-7: in-progress
+  7-1-export-service-foundation: review
+  7-4-rubric-scores-fact-schema: done
+  7-2-report-query-layer: review
+  7-3-report-download-ui: review
+  7-5-reports-page-live-views-and-lock: review
+  7-6-reports-marks-matrix-layout-sort-export: review
+  7-7-fix-export-binary-rest-delivery: in-progress
+  7-8-reports-marks-draft-scores-panel-reviewer-slots: review
+  7-9-reports-overall-scores-matrix: review
+  7-10-reports-empty-cells-no-draft-label: review
+  epic-7-retrospective: optional
+  epic-8: in-progress
+  8-1-session-close-service: review
+  8-2-close-session-ui: review
+  8-3-reopen-closed-project: review
+  8-4-delete-project-cascade-confirmations: review
+  epic-8-retrospective: optional
+  epic-9: in-progress
+  9-1-audit-service: review
+  9-2-mark-override: review
+  9-3-wp-admin-settings: review
+  9-4-notification-emails: review
+  epic-9-retrospective: optional
+  epic-10: in-progress
+  10-1-rename-session-to-project-terminology: review
+  epic-10-retrospective: optional
+  epic-11: in-progress
+  11-1-panel-head-reports-pdf-freeze: review
+  11-2-panel-report-settings-report-layout-preview: review
+  epic-11-retrospective: optional
+  epic-12: in-progress
+  12-1-reports-panel-context-live-views: review
+  12-2-reports-panel-roster-export: review
+  12-3-reports-consolidated-student-export: review
+  12-4-reports-offline-scoring-pdf: review
+  12-5-reports-downloads-tab-restructure: review
+  12-6-consolidated-export-excel-layout-fix: review
+  12-7-reviewer-panel-report-empty-page-fix: review
+  12-8-consolidated-export-xlsx-academic-formatting: review
+  epic-12-retrospective: optional
+  epic-13: in-progress
+  13-1-coordinator-reviews-rubrics-navigation-consolidation: review
+  13-2-rubric-criteria-validation-and-form-ux: review
+  epic-13-retrospective: optional
+  epic-14: in-progress
+  14-1-faculty-reviewer-pool-bulk-invite: review
+  epic-14-retrospective: optional
+  epic-15: in-progress
+  15-1-plugin-e2e-automation-and-teardown: review
+  epic-15-retrospective: optional
+  epic-16: in-progress
+  16-1-project-backup-database-reports-zip: review
+  epic-16-retrospective: optional
+  epic-17: in-progress
+  17-1-dashboard-project-status-tabs: review
+  epic-17-retrospective: optional
+  epic-18: in-progress
+  18-1-mobile-first-css-media-query-audit: review
+  epic-18-retrospective: optional
+  epic-19: in-progress
+  19-1-route-navigation-loading-states: review
+  epic-19-retrospective: optional
+  epic-20: in-progress
+  20-1-configurable-app-branding-scorva-default: review
+  epic-20-retrospective: optional
+  epic-21: in-progress
+  21-1-coordinator-mark-override-shuttle-marking: review
+  epic-21-retrospective: optional
+  epic-22: in-progress
+  22-1-reviews-theme-menu-on-activation: review
+  epic-22-retrospective: optional
