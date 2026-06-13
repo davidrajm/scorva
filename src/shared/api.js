@@ -1,11 +1,11 @@
 /**
  * Shared REST client — uses wp-api-fetch default root (wp-json/) + wp_rest nonce.
- * Paths are prefixed with project-reviews/v1 (do not add a second root URL middleware;
+ * Paths are prefixed with scorva/v1 (do not add a second root URL middleware;
  * WordPress already registers one and it would overwrite our namespace).
  */
 import apiFetch from '@wordpress/api-fetch';
 
-const API_NAMESPACE = '/project-reviews/v1';
+const API_NAMESPACE = '/scorva/v1';
 
 function resolvePath( path ) {
 	const segment = path.startsWith( '/' ) ? path : `/${ path }`;

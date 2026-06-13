@@ -73,7 +73,7 @@ final class Rest_Backup
     private static function zip_response(array $built): \WP_REST_Response|\WP_Error
     {
         $path = (string) ($built['path'] ?? '');
-        $filename = (string) ($built['filename'] ?? 'project-reviews-backup.zip');
+        $filename = (string) ($built['filename'] ?? 'scorva-backup.zip');
         $temp_dir = (string) ($built['temp_dir'] ?? '');
 
         if ($path === '' || !is_readable($path)) {
@@ -83,7 +83,7 @@ final class Rest_Backup
 
             return new \WP_Error(
                 'pr_backup_failed',
-                __('Backup file could not be read.', 'project-reviews'),
+                __('Backup file could not be read.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -96,7 +96,7 @@ final class Rest_Backup
         if ($body === false || $body === '') {
             return new \WP_Error(
                 'pr_backup_failed',
-                __('Backup file is empty.', 'project-reviews'),
+                __('Backup file is empty.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -119,7 +119,7 @@ final class Rest_Backup
         if (get_transient($key)) {
             return new \WP_Error(
                 'pr_backup_throttled',
-                __('Please wait before requesting another backup.', 'project-reviews'),
+                __('Please wait before requesting another backup.', 'scorva'),
                 ['status' => 429]
             );
         }

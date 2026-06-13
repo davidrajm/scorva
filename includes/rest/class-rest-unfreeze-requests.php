@@ -53,7 +53,7 @@ final class Rest_Unfreeze_Requests
     {
         return new \WP_Error(
             'use_panel_head_grant',
-            __('Reviewer score unfreeze must be approved by the panel coordinator in the reviewer app.', 'project-reviews'),
+            __('Reviewer score unfreeze must be approved by the panel coordinator in the reviewer app.', 'scorva'),
             ['status' => 403]
         );
     }

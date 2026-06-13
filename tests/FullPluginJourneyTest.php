@@ -183,7 +183,7 @@ final class FullPluginJourneyTest extends TestCase
 
         RestTestFixtures::login_with_cap(PR_CAP_CLOSE_SESSION);
         RestTestFixtures::set_valid_rest_nonce('journey-reopen');
-        $request = new WP_REST_Request('POST', '/project-reviews/v1/sessions/' . $ctx['session_id'] . '/reopen');
+        $request = new WP_REST_Request('POST', '/scorva/v1/sessions/' . $ctx['session_id'] . '/reopen');
         $request->set_param('id', $ctx['session_id']);
         $reopened = Rest_Session_Close::reopen_session($request);
         $this->assertIsArray($reopened);

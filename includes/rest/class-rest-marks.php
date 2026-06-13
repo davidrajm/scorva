@@ -23,7 +23,7 @@ final class Rest_Marks
 
             return new \WP_Error(
                 'rest_forbidden',
-                __('You do not have permission to view marks.', 'project-reviews'),
+                __('You do not have permission to view marks.', 'scorva'),
                 ['status' => 403]
             );
         });
@@ -162,7 +162,7 @@ final class Rest_Marks
         $reason = trim((string) ($params['reason'] ?? ''));
 
         if ($score === null) {
-            return new \WP_Error('pr_invalid_score', __('Score is required.', 'project-reviews'), ['status' => 400]);
+            return new \WP_Error('pr_invalid_score', __('Score is required.', 'scorva'), ['status' => 400]);
         }
 
         $service = new MarkService();
@@ -170,8 +170,8 @@ final class Rest_Marks
         if (!$validation['ok']) {
             $code = $validation['error'] ?? 'reason_invalid';
             $message = $code === 'reason_too_short'
-                ? __('Reason must be at least 10 characters.', 'project-reviews')
-                : __('Override reason is required.', 'project-reviews');
+                ? __('Reason must be at least 10 characters.', 'scorva')
+                : __('Override reason is required.', 'scorva');
 
             return new \WP_Error($code, $message, ['status' => 400]);
         }
@@ -187,7 +187,7 @@ final class Rest_Marks
             $error = $result['error'] ?? 'override_failed';
             $status = $error === 'mark_not_found' ? 404 : 400;
 
-            return new \WP_Error($error, __('Unable to override mark.', 'project-reviews'), ['status' => $status]);
+            return new \WP_Error($error, __('Unable to override mark.', 'scorva'), ['status' => $status]);
         }
 
         return ['mark' => $result['mark'] ?? null];
