@@ -9,6 +9,7 @@ final class Install
     public static function get_schema_sql(string $prefix = '', string $charset_collate = ''): string
     {
         $tables = [
+            self::table_programs($prefix, $charset_collate),
             self::table_students($prefix, $charset_collate),
             self::table_field_definitions($prefix, $charset_collate),
             self::table_student_meta($prefix, $charset_collate),
@@ -92,6 +93,8 @@ final class Install
         self::backfill_review_assignments($wpdb);
         self::backfill_missing_review_panel_reviewers($wpdb);
         self::ensure_reviewer_credentials_columns($wpdb);
+        self::ensure_programs_table($wpdb);
+        self::backfill_programs_from_students($wpdb);
     }
 
     /**
@@ -296,6 +299,106 @@ INNER JOIN {$students} s ON s.id = m.student_id";
         $type = $row['Table_type'] ?? $row['table_type'] ?? '';
 
         return strtoupper((string) $type) === 'VIEW';
+    }
+
+    private static function table_programs(string $prefix, string $charset_collate): string
+    {
+        return "CREATE TABLE {$prefix}pr_programs (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            name varchar(255) NOT NULL,
+            code varchar(50) NOT NULL DEFAULT '',
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            UNIQUE KEY name_ci (name)
+        ) {$charset_collate};";
+    }
+
+    public static function ensure_programs_table(object $wpdb): bool
+    {
+        $table = $wpdb->prefix . 'pr_programs';
+        if (self::table_exists($wpdb, $table)) {
+            return true;
+        }
+
+        if (!function_exists('dbDelta')) {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        }
+
+        $charset = method_exists($wpdb, 'get_charset_collate')
+            ? $wpdb->get_charset_collate()
+            : 'utf8mb4_unicode_ci';
+
+        dbDelta(self::table_programs($wpdb->prefix, $charset));
+
+        return self::table_exists($wpdb, $table);
+    }
+
+    /**
+     * Seed pr_programs from distinct existing students.program values (case-insensitive de-dup, first-seen wins).
+     * Rewrites student rows to the canonical name from the catalog.
+     */
+    public static function backfill_programs_from_students(object $wpdb): void
+    {
+        $programs_table = $wpdb->prefix . 'pr_programs';
+        $students_table = $wpdb->prefix . 'pr_students';
+
+        if (!self::table_exists($wpdb, $programs_table) || !self::table_exists($wpdb, $students_table)) {
+            return;
+        }
+
+        $option_key = 'pr_programs_backfill_v1';
+        if (function_exists('get_option') && get_option($option_key, false)) {
+            return;
+        }
+
+        $rows = $wpdb->get_results(
+            "SELECT DISTINCT program FROM {$students_table} WHERE program != '' ORDER BY program ASC",
+            'ARRAY_A'
+        );
+
+        if (!is_array($rows) || $rows === []) {
+            if (function_exists('update_option')) {
+                update_option($option_key, true, false);
+            }
+
+            return;
+        }
+
+        /** @var array<string, string> $seen lowercase => canonical name */
+        $seen = [];
+
+        foreach ($rows as $row) {
+            $raw = (string) ($row['program'] ?? '');
+            if ($raw === '') {
+                continue;
+            }
+
+            $lower = strtolower($raw);
+            if (!isset($seen[$lower])) {
+                $wpdb->insert(
+                    $programs_table,
+                    ['name' => $raw, 'code' => ''],
+                    ['%s', '%s']
+                );
+                $seen[$lower] = $raw;
+            }
+
+            $canonical = $seen[$lower];
+            if ($canonical !== $raw) {
+                $wpdb->query(
+                    $wpdb->prepare(
+                        "UPDATE {$students_table} SET program = %s WHERE program = %s",
+                        $canonical,
+                        $raw
+                    )
+                );
+            }
+        }
+
+        if (function_exists('update_option')) {
+            update_option($option_key, true, false);
+        }
     }
 
     private static function table_students(string $prefix, string $charset_collate): string
@@ -1089,6 +1192,7 @@ INNER JOIN {$students} s ON s.id = m.student_id";
             'pr_student_meta',
             'pr_field_definitions',
             'pr_students',
+            'pr_programs',
         ];
 
         return array_map(
@@ -1109,6 +1213,7 @@ INNER JOIN {$students} s ON s.id = m.student_id";
             'pr_plugin_settings',
             'pr_review_assignments_backfilled',
             'pr_review_panel_reviewers_backfill_v1',
+            'pr_programs_backfill_v1',
             'pr_theme_nav_bootstrap',
             'pr_theme_nav_bootstrap_status',
             'pr_theme_nav_manual_notice_dismissed',

@@ -23,6 +23,7 @@ final class Rest_Bootstrap
             ]
         );
 
+        require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-programs.php';
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-students.php';
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-faculty-accounts.php';
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-sessions.php';
@@ -44,6 +45,7 @@ final class Rest_Bootstrap
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-backup.php';
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-smtp.php';
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-portal.php';
+        Rest_Programs::register_routes();
         Rest_Students::register_routes();
         Rest_Faculty_Accounts::register_routes();
         Rest_Sessions::register_routes();
