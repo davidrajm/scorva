@@ -1,13 +1,15 @@
 <?php
 /**
  * Plugin Name: Scorva
- * Description: The Review Management System — project review workflows for SASTT.
- * Version: 0.1.0
- * Author: SASTT
+ * Plugin URI:  https://github.com/davidrajm/scorva
+ * Description: Project review workflow management for WordPress — sessions, panels, rubrics, reviewer marking, reports, and data export.
+ * Version:     0.1.0
+ * Author:      David
+ * Author URI:  https://github.com/davidrajm
  * Text Domain: scorva
+ * License:     GPL-2.0+
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
-// TODO (manual step): rename the plugin folder from `project-reviews/` to `scorva/` after committing
-// this change — the folder rename must be done outside Claude Code to avoid breaking the session.
 
 declare(strict_types=1);
 

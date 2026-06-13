@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-05-21T19:59:22.784Z",
+  "typst_dir": "screenshots/2026-05-22_012914/",
+  "captured": [
+    "01-landing-login",
+    "04-dashboard",
+    "02-workspace-top-nav",
+    "03-coordinator-nav",
+    "05-registry",
+    "07-wizard-nav",
+    "08-wizard-students",
+    "09-wizard-panels",
+    "10-wizard-reviewers",
+    "11-wizard-rubric-builder",
+    "12-rubric-confirm-dialog",
+    "13-wizard-assignments",
+    "14-wizard-open-marking",
+    "15-progress-accordion",
+    "18-reports-tabs",
+    "20-reports-downloads",
+    "25-reviewer-assignments",
+    "26-marking-grid",
+    "28-rubric-form"
+  ],
+  "pending": [
+    "06-csv-import-mapper",
+    "16-score-breakdown",
+    "17-unfreeze-requests",
+    "19-reports-marks-matrix",
+    "21-offline-scoring-pdf",
+    "22-panel-report-settings",
+    "23-audit-log",
+    "24-close-project",
+    "27-marking-grid-mobile",
+    "29-validation-error",
+    "30-flagged-mark",
+    "31-freeze-scores-dialog",
+    "32-unfreeze-request",
+    "33-panel-head-card",
+    "34-panel-report-page",
+    "35-panel-head-unfreeze"
+  ]
+}

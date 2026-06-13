@@ -4,3 +4,18 @@
 .phpunit.result.cache
 tests/e2e/.env.local
 tests/e2e/.walkthrough-state.json
+
+# Internal planning and private content — not for public distribution
+/.claude/
+/_bmad/
+/_bmad-output/
+/docs/stories/
+/docs/theme-nav-david-sas-snippet.md
+/docs/responsive-audit.md
+
+# Generated test output
+/playwright-report/
+/test-results/
+
+# Local dev config (contains site-specific proxy URL)
+/browser-sync.config.js

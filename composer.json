@@ -1,5 +1,5 @@
 {
-    "name": "sastt/scorva",
+    "name": "davidrajm/scorva",
     "require": {
         "php": ">=8.2",
         "phpoffice/phpspreadsheet": "^2.0",
