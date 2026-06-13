@@ -308,13 +308,79 @@ final class PanelReportPdfContextBuilder
                 return '';
             }
 
-            $data_uri = $this->attachment_to_data_uri($attachment_id);
+            $data_uri = $this->attachment_sized_to_data_uri($attachment_id);
             if ($data_uri !== '') {
                 return $data_uri;
             }
         }
 
         return '';
+    }
+
+    /**
+     * Prefer a downsized attachment (large → medium_large) to reduce PDF data-URI size,
+     * falling back to the original file.
+     */
+    private function attachment_sized_to_data_uri(int $attachment_id): string
+    {
+        if ($attachment_id <= 0) {
+            return '';
+        }
+
+        foreach (['large', 'medium_large'] as $size) {
+            if (!function_exists('wp_get_attachment_image_src')) {
+                break;
+            }
+            $src = wp_get_attachment_image_src($attachment_id, $size);
+            if (!is_array($src) || empty($src[0])) {
+                continue;
+            }
+            $url = (string) $src[0];
+            // Resolve URL to a filesystem path via the uploads directory mapping.
+            $path = $this->resolve_path_from_upload_url($url);
+            if ($path !== '' && is_readable($path)) {
+                $uri = $this->path_to_data_uri($path);
+                if ($uri !== '') {
+                    return $uri;
+                }
+            }
+        }
+
+        return $this->attachment_to_data_uri($attachment_id);
+    }
+
+    private function resolve_path_from_upload_url(string $url): string
+    {
+        if ($url === '' || !function_exists('wp_upload_dir')) {
+            return '';
+        }
+        $upload = wp_upload_dir();
+        $base_url = rtrim((string) ($upload['baseurl'] ?? ''), '/');
+        $base_dir = rtrim((string) ($upload['basedir'] ?? ''), '/');
+        if ($base_url === '' || $base_dir === '' || strpos($url, $base_url) !== 0) {
+            return '';
+        }
+        return $base_dir . substr($url, strlen($base_url));
+    }
+
+    private function path_to_data_uri(string $path): string
+    {
+        if ($path === '' || !is_readable($path)) {
+            return '';
+        }
+        $mime = function_exists('wp_check_filetype') ? (wp_check_filetype($path)['type'] ?? '') : '';
+        if ($mime === '' && function_exists('mime_content_type')) {
+            $detected = mime_content_type($path);
+            $mime = is_string($detected) ? $detected : '';
+        }
+        if ($mime === '') {
+            $mime = 'image/png';
+        }
+        $bytes = file_get_contents($path);
+        if ($bytes === false) {
+            return '';
+        }
+        return 'data:' . $mime . ';base64,' . base64_encode($bytes);
     }
 
     private function attachment_to_data_uri(int $attachment_id): string

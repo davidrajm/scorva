@@ -378,8 +378,9 @@ CSS;
             if (($block['type'] ?? '') === 'image') {
                 if ($logo_data_uri !== '') {
                     $width = (float) ($block['width_in'] ?? 4.0);
+                    $width = max(0.5, min(8.0, $width));
                     $html .= sprintf(
-                        '<img src="%s" style="width: %.2fin;" alt="" />',
+                        '<img src="%s" style="width: %.2fin; max-height: 1.5in; height: auto;" alt="" />',
                         esc_attr($logo_data_uri),
                         $width
                     );

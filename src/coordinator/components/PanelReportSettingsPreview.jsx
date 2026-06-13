@@ -65,8 +65,8 @@ export function PanelReportSettingsPreview( {
 	const columns = buildPreviewScoreColumns( table, fixture.reviewers );
 	const widthIn = logoBlock?.width_in ?? 4;
 
-	const program = ( report.program_name || '' ).trim();
-	const semester = ( report.semester || '' ).trim();
+	const program = report.program_name || '';
+	const semester = report.semester || '';
 	const metaRows = [
 		{
 			cells: [
@@ -149,6 +149,7 @@ export function PanelReportSettingsPreview( {
 								style={ {
 									width: `${ widthIn }in`,
 									maxWidth: '100%',
+									maxHeight: '1.5in',
 									height: 'auto',
 								} }
 							/>
@@ -184,56 +185,27 @@ export function PanelReportSettingsPreview( {
 									onChange={ onLogoWidthChange }
 								/>
 							</label>
-							{ textBlocks.map( ( block, index ) => {
-								const hasValue = ( block.value || '' ).trim() !== '';
-								if ( hasValue ) {
-									return null;
-								}
-								return (
-									<label
-										key={ `lh-empty-${ index }` }
-										className="mt-2 block text-left"
-									>
-										{ letterheadLabelForIndex( index, true ) }
-										<input
-											type="text"
-											className="mt-1 w-full max-w-xs rounded border border-border px-2 py-1"
-											placeholder={ `Add ${ letterheadLabelForIndex( index ).toLowerCase() }` }
-											value={ block.value || '' }
-											disabled={ disabled }
-											onChange={ ( e ) =>
-												onLetterheadText( index, 'value', e.target.value )
-											}
-										/>
-									</label>
-								);
-							} ) }
 						</div>
-						{ textBlocks.map( ( block, index ) => {
-							const hasValue = ( block.value || '' ).trim() !== '';
-							if ( ! hasValue ) {
-								return null;
-							}
-							return (
-								<div
-									key={ `lh-text-${ index }` }
-									className={ letterheadClassForIndex( index ) }
-								>
-									<label className="sr-only">
-										{ letterheadLabelForIndex( index ) }
-									</label>
-									<input
-										type="text"
-										className="pr-preview-inline-input text-center"
-										value={ block.value || '' }
-										disabled={ disabled }
-										onChange={ ( e ) =>
-											onLetterheadText( index, 'value', e.target.value )
-										}
-									/>
-								</div>
-							);
-						} ) }
+						{ textBlocks.map( ( block, index ) => (
+							<div
+								key={ `lh-block-${ index }` }
+								className={ letterheadClassForIndex( index ) }
+							>
+								<label className="sr-only">
+									{ letterheadLabelForIndex( index ) }
+								</label>
+								<input
+									type="text"
+									className="pr-preview-inline-input text-center"
+									placeholder={ letterheadLabelForIndex( index, true ) }
+									value={ block.value || '' }
+									disabled={ disabled }
+									onChange={ ( e ) =>
+										onLetterheadText( index, 'value', e.target.value )
+									}
+								/>
+							</div>
+						) ) }
 					</section>
 
 					<section

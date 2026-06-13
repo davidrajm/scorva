@@ -269,15 +269,26 @@ export function PanelReportSettings() {
 		} );
 	};
 
+	const trimReportMeta = ( s ) => ( {
+		...s,
+		report: {
+			...s.report,
+			program_name: ( s.report?.program_name || '' ).trim(),
+			semester: ( s.report?.semester || '' ).trim(),
+		},
+	} );
+
 	const handleSave = async () => {
 		if ( frozen ) {
 			return;
 		}
 		setSaving( true );
 		setNotice( null );
+		const payload = trimReportMeta( settings );
+		setSettings( payload );
 		try {
 			await put( `sessions/${ sessionId }/panel-report-settings`, {
-				panel_report_pdf: settings,
+				panel_report_pdf: payload,
 			} );
 			setNotice( { type: 'success', message: 'Panel report settings saved.' } );
 		} catch {
@@ -290,10 +301,12 @@ export function PanelReportSettings() {
 	const handleFreezeSettings = async () => {
 		setFreezing( true );
 		setNotice( null );
+		const payload = trimReportMeta( settings );
+		setSettings( payload );
 		try {
 			const data = await post(
 				`sessions/${ sessionId }/panel-report-settings/freeze`,
-				{ panel_report_pdf: settings }
+				{ panel_report_pdf: payload }
 			);
 			setSettingsFrozen( true );
 			if ( data?.panel_report_pdf ) {

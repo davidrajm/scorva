@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkproject_reviews=globalThis.webpackChunkproject_reviews||[]).push([[340],{5340(e,s,i){i.d(s,{SessionReviewsWizardRedirect:()=>c});var r=i(7767),t=i(790);function c(){const{id:e}=(0,r.g)();return(0,t.jsx)(r.C5,{to:`/session/${e}/wizard?step=reviews`,replace:!0})}}}]);
