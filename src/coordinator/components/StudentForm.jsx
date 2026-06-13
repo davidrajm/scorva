@@ -1,11 +1,10 @@
 import { useEffect, useState } from '@wordpress/element';
-import { post, put } from '../../shared/api';
+import { get, post, put } from '../../shared/api';
 import { Button } from '../../shared/components';
 
-const CORE_FIELDS = [
+const SCALAR_FIELDS = [
 	{ key: 'reg_no', label: 'Registration number', required: true },
 	{ key: 'name', label: 'Name', required: true },
-	{ key: 'program', label: 'Program', required: false },
 	{ key: 'batch', label: 'Batch', required: false },
 ];
 
@@ -25,6 +24,13 @@ export function StudentForm( {
 	} );
 	const [ saving, setSaving ] = useState( false );
 	const [ error, setError ] = useState( '' );
+	const [ programs, setPrograms ] = useState( [] );
+
+	useEffect( () => {
+		get( '/programs' )
+			.then( ( data ) => setPrograms( data?.programs ?? [] ) )
+			.catch( () => setPrograms( [] ) );
+	}, [] );
 
 	useEffect( () => {
 		if ( ! student ) {
@@ -61,11 +67,29 @@ export function StudentForm( {
 		event.preventDefault();
 		setSaving( true );
 		setError( '' );
+
+		const programValue = form.program.trim();
+
+		// Validate program against catalog (case-insensitive) before submitting.
+		if ( programValue !== '' ) {
+			const lowerValue = programValue.toLowerCase();
+			const match = programs.find(
+				( p ) => p.name.toLowerCase() === lowerValue
+			);
+			if ( ! match ) {
+				setError(
+					`Program "${ programValue }" is not in the catalog. Add it to the program catalog first.`
+				);
+				setSaving( false );
+				return;
+			}
+		}
+
 		try {
 			const payload = {
 				reg_no: form.reg_no.trim(),
 				name: form.name.trim(),
-				program: form.program.trim(),
+				program: programValue,
 				batch: form.batch.trim(),
 				meta: form.meta,
 			};
@@ -95,7 +119,7 @@ export function StudentForm( {
 				{ isEdit ? 'Edit student' : 'Add student' }
 			</h3>
 			<div className="mt-4 grid gap-4 sm:grid-cols-2">
-				{ CORE_FIELDS.map( ( field ) => (
+				{ SCALAR_FIELDS.map( ( field ) => (
 					<div key={ field.key }>
 						<label
 							className="block text-sm font-medium text-text"
@@ -117,6 +141,38 @@ export function StudentForm( {
 						/>
 					</div>
 				) ) }
+				<div>
+					<label
+						className="block text-sm font-medium text-text"
+						htmlFor="student-program"
+					>
+						Program
+					</label>
+					<input
+						id="student-program"
+						type="text"
+						list="student-program-list"
+						value={ form.program }
+						onChange={ ( e ) => setField( 'program', e.target.value ) }
+						autoComplete="off"
+						className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
+					/>
+					<datalist id="student-program-list">
+						{ programs.map( ( p ) => (
+							<option key={ p.id } value={ p.name } />
+						) ) }
+					</datalist>
+					{ form.program.trim() !== '' &&
+						! programs.some(
+							( p ) =>
+								p.name.toLowerCase() ===
+								form.program.trim().toLowerCase()
+						) && (
+							<p className="mt-1 text-xs text-warning">
+								{ `"${ form.program.trim() }" is not in the catalog. Add it to the program catalog first.` }
+							</p>
+						) }
+				</div>
 				{ customFields.map( ( field ) => (
 					<div key={ field.field_key }>
 						<label

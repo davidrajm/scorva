@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ProjectReviews;
 
 use ProjectReviews\Repositories\FieldDefinitionRepository;
+use ProjectReviews\Repositories\ProgramRepository;
 use ProjectReviews\Repositories\StudentRepository;
 
 final class Rest_Students
@@ -149,6 +150,14 @@ final class Rest_Students
             return $data;
         }
 
+        if (isset($data['program']) && $data['program'] !== '') {
+            $program_error = self::validate_program_against_catalog($data['program']);
+            if ($program_error instanceof \WP_Error) {
+                return $program_error;
+            }
+            $data['program'] = $program_error; // canonical name
+        }
+
         $repository = new StudentRepository();
         if ($repository->reg_no_exists($data['reg_no'])) {
             return new \WP_Error(
@@ -184,6 +193,14 @@ final class Rest_Students
         $data = self::parse_student_body($request, false);
         if ($data instanceof \WP_Error) {
             return $data;
+        }
+
+        if (isset($data['program']) && $data['program'] !== '') {
+            $program_error = self::validate_program_against_catalog($data['program']);
+            if ($program_error instanceof \WP_Error) {
+                return $program_error;
+            }
+            $data['program'] = $program_error; // canonical name
         }
 
         if (isset($data['reg_no']) && $repository->reg_no_exists($data['reg_no'], $id)) {
@@ -386,15 +403,42 @@ final class Rest_Students
         }
 
         $field_keys = self::custom_field_keys();
+        $program_catalog = self::build_program_catalog();
         $normalized = [];
-        foreach ($rows as $row) {
+        $pre_errors = [];
+
+        foreach ($rows as $index => $row) {
             if (!is_array($row)) {
                 continue;
             }
+
+            $line = $index + 1;
+            $reg_no = (string) ($row['reg_no'] ?? '');
+            $raw_program = trim((string) ($row['program'] ?? ''));
+            $canonical_program = '';
+
+            if ($raw_program !== '') {
+                $lower = strtolower($raw_program);
+                if (isset($program_catalog[$lower])) {
+                    $canonical_program = $program_catalog[$lower];
+                } else {
+                    $pre_errors[] = [
+                        'row' => $line,
+                        'reg_no' => $reg_no,
+                        'message' => sprintf(
+                            /* translators: %s: program name from CSV */
+                            __('Program "%s" is not in the catalog. Add it to the program catalog before importing.', 'scorva'),
+                            $raw_program
+                        ),
+                    ];
+                    continue;
+                }
+            }
+
             $entry = [
-                'reg_no' => (string) ($row['reg_no'] ?? ''),
+                'reg_no' => $reg_no,
                 'name' => (string) ($row['name'] ?? ''),
-                'program' => (string) ($row['program'] ?? ''),
+                'program' => $canonical_program,
                 'batch' => (string) ($row['batch'] ?? ''),
             ];
             $meta = [];
@@ -411,6 +455,10 @@ final class Rest_Students
 
         $repository = new StudentRepository();
         $result = $repository->import_rows($normalized, $policy);
+
+        // Prepend program-validation errors (they count as failures).
+        $result['failed'] = (int) ($result['failed'] ?? 0) + count($pre_errors);
+        $result['errors'] = array_merge($pre_errors, $result['errors'] ?? []);
         $result['error_csv'] = self::build_error_csv($result['errors']);
 
         return $result;
@@ -428,6 +476,54 @@ final class Rest_Students
         }
 
         return $keys;
+    }
+
+    /**
+     * Validate a program name against the catalog (case-insensitive).
+     *
+     * @return string|\WP_Error Canonical program name on success, WP_Error on failure.
+     */
+    private static function validate_program_against_catalog(string $program): string|\WP_Error
+    {
+        $catalog = self::build_program_catalog();
+        $lower = strtolower(trim($program));
+
+        if ($lower === '') {
+            return '';
+        }
+
+        if (!isset($catalog[$lower])) {
+            return new \WP_Error(
+                'pr_invalid_program',
+                sprintf(
+                    /* translators: %s: program name */
+                    __('Program "%s" is not in the catalog. Add it to the program catalog first.', 'scorva'),
+                    $program
+                ),
+                ['status' => 400]
+            );
+        }
+
+        return $catalog[$lower];
+    }
+
+    /**
+     * Build a lowercase-keyed map of program names from the catalog.
+     *
+     * @return array<string, string> lowercase name => canonical name
+     */
+    private static function build_program_catalog(): array
+    {
+        $repository = new ProgramRepository();
+        $catalog = [];
+        foreach ($repository->list() as $program) {
+            $name = (string) ($program['name'] ?? '');
+            if ($name !== '') {
+                $catalog[strtolower($name)] = $name;
+            }
+        }
+
+        return $catalog;
     }
 
     /**
