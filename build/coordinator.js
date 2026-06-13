@@ -5791,11 +5791,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0__);
 /**
  * Shared REST client — uses wp-api-fetch default root (wp-json/) + wp_rest nonce.
- * Paths are prefixed with project-reviews/v1 (do not add a second root URL middleware;
+ * Paths are prefixed with scorva/v1 (do not add a second root URL middleware;
  * WordPress already registers one and it would overwrite our namespace).
  */
 
-const API_NAMESPACE = '/project-reviews/v1';
+const API_NAMESPACE = '/scorva/v1';
 function resolvePath(path) {
   const segment = path.startsWith('/') ? path : `/${path}`;
   return `${API_NAMESPACE}${segment}`;
@@ -11185,7 +11185,7 @@ module.exports = window["wp"]["element"];
 /******/ 		// This function allow to reference async chunks
 /******/ 		__webpack_require__.u = (chunkId) => {
 /******/ 			// return url for filenames based on template
-/******/ 			return "" + chunkId + ".js?ver=" + {"src_coordinator_pages_Dashboard_jsx":"aa704d04821e85edf098","src_coordinator_pages_Registry_jsx":"b7f36cf114a2524d064b","src_coordinator_pages_SessionWizard_jsx":"d8f8212b8d66618dcf28","src_coordinator_pages_Reports_jsx":"a15e464fe34d02e29345","src_coordinator_pages_CloseSession_jsx":"687a00be74fabc3b9420","src_coordinator_pages_AuditLog_jsx":"ed0bb157a29a4c510126","src_coordinator_pages_SessionProgress_jsx":"c3a67f4268367bd2ecc4","src_coordinator_pages_Rubrics_jsx":"4c7ce204229296bfb1ca","src_coordinator_pages_PanelReportSettings_jsx":"9f4ac281551922d0734a","src_coordinator_pages_FacultyAccounts_jsx":"d23f72c922028fcbc07b"}[chunkId] + "";
+/******/ 			return "" + chunkId + ".js?ver=" + {"src_coordinator_pages_Dashboard_jsx":"aa704d04821e85edf098","src_coordinator_pages_Registry_jsx":"b7f36cf114a2524d064b","src_coordinator_pages_SessionWizard_jsx":"d8f8212b8d66618dcf28","src_coordinator_pages_Reports_jsx":"a15e464fe34d02e29345","src_coordinator_pages_CloseSession_jsx":"f5173bfff0f41d56ef63","src_coordinator_pages_AuditLog_jsx":"ed0bb157a29a4c510126","src_coordinator_pages_SessionProgress_jsx":"c3a67f4268367bd2ecc4","src_coordinator_pages_Rubrics_jsx":"4c7ce204229296bfb1ca","src_coordinator_pages_PanelReportSettings_jsx":"43fdade97c76828a37cb","src_coordinator_pages_FacultyAccounts_jsx":"5a8838f96097058e3d0f"}[chunkId] + "";
 /******/ 		};
 /******/ 	})();
 /******/ 	
