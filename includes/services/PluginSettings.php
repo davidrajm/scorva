@@ -416,9 +416,7 @@ final class PluginSettings
             $type = (string) ($block['type'] ?? 'text');
             if ($type === 'image') {
                 $width = (float) ($block['width_in'] ?? 4.0);
-                if ($width <= 0) {
-                    $width = 4.0;
-                }
+                $width = max(0.5, min(8.0, $width <= 0 ? 4.0 : $width));
                 $letterhead_blocks[] = [
                     'type' => 'image',
                     'attachment_id' => max(0, (int) ($block['attachment_id'] ?? 0)),
