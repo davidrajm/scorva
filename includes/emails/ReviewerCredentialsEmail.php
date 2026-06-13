@@ -27,9 +27,9 @@ final class ReviewerCredentialsEmail
         $brand = PluginSettings::app_short_name();
         $subject = sprintf(
             /* translators: 1: product short name, 2: review project title */
-            __('%1$s: Your reviewer access for %2$s', 'project-reviews'),
+            __('%1$s: Your reviewer access for %2$s', 'scorva'),
             $brand,
-            $session_title !== '' ? $session_title : __('a review project', 'project-reviews')
+            $session_title !== '' ? $session_title : __('a review project', 'scorva')
         );
 
         $message = '<div style="font-family:sans-serif;max-width:560px;color:#1a1a1a;">';
@@ -40,7 +40,7 @@ final class ReviewerCredentialsEmail
         $message .= esc_html(
             sprintf(
                 /* translators: %s: recipient display name */
-                __('Hello %s,', 'project-reviews'),
+                __('Hello %s,', 'scorva'),
                 $name
             )
         );
@@ -48,27 +48,27 @@ final class ReviewerCredentialsEmail
         $message .= '<p>';
         $message .= esc_html__(
             'You have been added as a reviewer for this project. Open your personal review link below and enter the password to start marking. No account is required.',
-            'project-reviews'
+            'scorva'
         );
         $message .= '</p>';
         $message .= '<p style="margin:20px 0;">';
         $message .= '<a href="' . esc_url($portal_url) . '" '
             . 'style="background:#2271b1;color:#ffffff;padding:10px 20px;border-radius:4px;'
             . 'text-decoration:none;font-weight:600;display:inline-block;">';
-        $message .= esc_html__('Open review portal', 'project-reviews');
+        $message .= esc_html__('Open review portal', 'scorva');
         $message .= '</a></p>';
         $message .= '<table style="margin:16px 0;border-collapse:collapse;">';
         $message .= '<tr><td style="padding:4px 12px 4px 0;font-weight:600;">';
-        $message .= esc_html__('Review link', 'project-reviews') . '</td><td>';
+        $message .= esc_html__('Review link', 'scorva') . '</td><td>';
         $message .= '<a href="' . esc_url($portal_url) . '">' . esc_html($portal_url) . '</a></td></tr>';
         $message .= '<tr><td style="padding:4px 12px 4px 0;font-weight:600;">';
-        $message .= esc_html__('Password', 'project-reviews') . '</td><td>' . esc_html($password) . '</td></tr>';
+        $message .= esc_html__('Password', 'scorva') . '</td><td>' . esc_html($password) . '</td></tr>';
         $message .= '</table>';
         $message .= '<p style="color:#666;font-size:13px;">';
         $message .= esc_html(
             sprintf(
                 /* translators: %s: application display name */
-                __('This link and password are unique to you — do not share them. Sent by %s.', 'project-reviews'),
+                __('This link and password are unique to you — do not share them. Sent by %s.', 'scorva'),
                 PluginSettings::app_display_name()
             )
         );

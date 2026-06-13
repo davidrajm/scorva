@@ -183,12 +183,12 @@ final class SmtpService
         $brand = PluginSettings::app_short_name();
         $subject = sprintf(
             /* translators: %s: product short name */
-            __('%s: SMTP test email', 'project-reviews'),
+            __('%s: SMTP test email', 'scorva'),
             $brand
         );
         $message = sprintf(
             /* translators: %s: application display name */
-            __('This is a test email from %s. If you received this, your email settings are working correctly.', 'project-reviews'),
+            __('This is a test email from %s. If you received this, your email settings are working correctly.', 'scorva'),
             PluginSettings::app_display_name()
         );
 

@@ -30,7 +30,7 @@ final class Rest_Smtp
         if ($to === '') {
             return new \WP_Error(
                 'pr_smtp_no_recipient',
-                __('Your account has no email address to send the test to.', 'project-reviews'),
+                __('Your account has no email address to send the test to.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -52,11 +52,11 @@ final class Rest_Smtp
         }
 
         if (!$sent) {
-            $message = __('Test email could not be sent. Check the SMTP settings and try again.', 'project-reviews');
+            $message = __('Test email could not be sent. Check the SMTP settings and try again.', 'scorva');
             if (is_string($mail_error) && $mail_error !== '') {
                 $message .= ' ' . sprintf(
                     /* translators: %s: mailer error detail */
-                    __('Mailer error: %s', 'project-reviews'),
+                    __('Mailer error: %s', 'scorva'),
                     $mail_error
                 );
             }

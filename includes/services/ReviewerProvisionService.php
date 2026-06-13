@@ -46,7 +46,7 @@ final class ReviewerProvisionService
         if ($email === '') {
             return new \WP_Error(
                 'pr_reviewer_missing_email',
-                __('Email is required.', 'project-reviews'),
+                __('Email is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -103,24 +103,24 @@ final class ReviewerProvisionService
     ): array|\WP_Error {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $reviewer = $this->panels->find_reviewer($reviewer_id);
         if ($reviewer === null) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found.', 'scorva'), ['status' => 404]);
         }
 
         $panel = $this->panels->find_by_id((int) $reviewer['panel_id']);
         if ($panel === null || (int) $panel['session_id'] !== $session_id) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found in this project.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found in this project.', 'scorva'), ['status' => 404]);
         }
 
         $email = strtolower(trim((string) ($reviewer['email'] ?? '')));
         if ($email === '' && $send_email) {
             return new \WP_Error(
                 'pr_reviewer_missing_email',
-                __('Email is required before sending credentials.', 'project-reviews'),
+                __('Email is required before sending credentials.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -217,24 +217,24 @@ final class ReviewerProvisionService
     {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $reviewer = $this->panels->find_reviewer($reviewer_id);
         if ($reviewer === null) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found.', 'scorva'), ['status' => 404]);
         }
 
         $panel = $this->panels->find_by_id((int) $reviewer['panel_id']);
         if ($panel === null || (int) $panel['session_id'] !== $session_id) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found in this project.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found in this project.', 'scorva'), ['status' => 404]);
         }
 
         $email = strtolower(trim((string) ($reviewer['email'] ?? '')));
         if ($email === '') {
             return new \WP_Error(
                 'pr_reviewer_missing_email',
-                __('Email is required before sending credentials.', 'project-reviews'),
+                __('Email is required before sending credentials.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -244,7 +244,7 @@ final class ReviewerProvisionService
         if ($token === '' || $encrypted === '') {
             return new \WP_Error(
                 'pr_no_credentials',
-                __('No credentials have been generated for this reviewer. Use "Send credentials" first.', 'project-reviews'),
+                __('No credentials have been generated for this reviewer. Use "Send credentials" first.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -253,7 +253,7 @@ final class ReviewerProvisionService
         if ($password === '') {
             return new \WP_Error(
                 'pr_credentials_unreadable',
-                __('Could not read stored credentials. Regenerate credentials for this reviewer.', 'project-reviews'),
+                __('Could not read stored credentials. Regenerate credentials for this reviewer.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -316,7 +316,7 @@ final class ReviewerProvisionService
     {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $sent = 0;
@@ -368,7 +368,7 @@ final class ReviewerProvisionService
                     'reviewer_id' => $reviewer_id,
                     'email' => $email,
                     'status' => 'failed',
-                    'message' => __('Email could not be sent.', 'project-reviews'),
+                    'message' => __('Email could not be sent.', 'scorva'),
                 ];
                 continue;
             }
@@ -408,7 +408,7 @@ final class ReviewerProvisionService
         if (!function_exists('get_user_by')) {
             return new \WP_Error(
                 'pr_provision_unavailable',
-                __('User provisioning is not available.', 'project-reviews'),
+                __('User provisioning is not available.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -430,7 +430,7 @@ final class ReviewerProvisionService
         if (!function_exists('wp_create_user') || !function_exists('wp_generate_password')) {
             return new \WP_Error(
                 'pr_provision_unavailable',
-                __('User provisioning is not available.', 'project-reviews'),
+                __('User provisioning is not available.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -460,7 +460,7 @@ final class ReviewerProvisionService
         if ($user_id <= 0) {
             return new \WP_Error(
                 'pr_provision_failed',
-                __('Could not create reviewer account.', 'project-reviews'),
+                __('Could not create reviewer account.', 'scorva'),
                 ['status' => 500]
             );
         }

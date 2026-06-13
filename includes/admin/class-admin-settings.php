@@ -19,7 +19,7 @@ final class Admin_Settings
             $menu_label,
             $menu_label,
             PR_CAP_MANAGE_SETTINGS,
-            'project-reviews-settings',
+            'scorva-settings',
             [self::class, 'render_page']
         );
 
@@ -58,7 +58,7 @@ final class Admin_Settings
 
     public static function enqueue_assets(string $hook): void
     {
-        if ($hook !== 'settings_page_project-reviews-settings') {
+        if ($hook !== 'settings_page_scorva-settings') {
             return;
         }
 
@@ -82,7 +82,7 @@ final class Admin_Settings
     public static function render_page(): void
     {
         if (!current_user_can(PR_CAP_MANAGE_SETTINGS)) {
-            wp_die(esc_html__('You do not have permission to access this page.', 'project-reviews'));
+            wp_die(esc_html__('You do not have permission to access this page.', 'scorva'));
         }
 
         $settings = PluginSettings::get();
@@ -97,7 +97,7 @@ final class Admin_Settings
             echo esc_html(
                 sprintf(
                     /* translators: %s: application display name */
-                    __('%s Settings', 'project-reviews'),
+                    __('%s Settings', 'scorva'),
                     $app_name
                 )
             );
@@ -107,7 +107,7 @@ final class Admin_Settings
                 <table class="form-table" role="presentation">
                     <tr>
                         <th scope="row">
-                            <label for="pr-app-display-name"><?php echo esc_html__('Application display name', 'project-reviews'); ?></label>
+                            <label for="pr-app-display-name"><?php echo esc_html__('Application display name', 'scorva'); ?></label>
                         </th>
                         <td>
                             <input name="<?php echo esc_attr($option_key); ?>[app_display_name]"
@@ -116,14 +116,14 @@ final class Admin_Settings
                             <p class="description">
                                 <?php echo esc_html__(
                                     'Shown in the app header, landing page, emails, and permission messages.',
-                                    'project-reviews'
+                                    'scorva'
                                 ); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="pr-from-name"><?php echo esc_html__('From name', 'project-reviews'); ?></label>
+                            <label for="pr-from-name"><?php echo esc_html__('From name', 'scorva'); ?></label>
                         </th>
                         <td>
                             <input name="<?php echo esc_attr($option_key); ?>[from_name]"
@@ -133,7 +133,7 @@ final class Admin_Settings
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="pr-reply-to"><?php echo esc_html__('Reply-to email', 'project-reviews'); ?></label>
+                            <label for="pr-reply-to"><?php echo esc_html__('Reply-to email', 'scorva'); ?></label>
                         </th>
                         <td>
                             <input name="<?php echo esc_attr($option_key); ?>[reply_to]"
@@ -143,20 +143,20 @@ final class Admin_Settings
                     </tr>
                     <tr>
                         <th scope="row">
-                            <label for="pr-login-url"><?php echo esc_html__('Base login URL', 'project-reviews'); ?></label>
+                            <label for="pr-login-url"><?php echo esc_html__('Base login URL', 'scorva'); ?></label>
                         </th>
                         <td>
                             <input name="<?php echo esc_attr($option_key); ?>[login_url]"
                                 id="pr-login-url" type="url" class="regular-text"
                                 value="<?php echo esc_attr((string) $settings['login_url']); ?>" />
                             <p class="description">
-                                <?php echo esc_html__('Used in reviewer invite emails.', 'project-reviews'); ?>
+                                <?php echo esc_html__('Used in reviewer invite emails.', 'scorva'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <?php echo esc_html__('Site menu', 'project-reviews'); ?>
+                            <?php echo esc_html__('Site menu', 'scorva'); ?>
                         </th>
                         <td>
                             <label>
@@ -165,7 +165,7 @@ final class Admin_Settings
                                     value="1" <?php checked(PluginSettings::theme_nav_auto_bootstrap_enabled()); ?> />
                                 <?php echo esc_html__(
                                     'Add Reviews link to site menu on activation',
-                                    'project-reviews'
+                                    'scorva'
                                 ); ?>
                             </label>
                             <br />
@@ -175,12 +175,12 @@ final class Admin_Settings
                                     value="1" <?php checked(PluginSettings::theme_nav_bridge_enabled()); ?> />
                                 <?php echo esc_html__(
                                     'Expose Reviews link via theme filter bridge (custom PHP nav themes)',
-                                    'project-reviews'
+                                    'scorva'
                                 ); ?>
                             </label>
                             <p>
                                 <label for="pr-theme-nav-menu-label">
-                                    <?php echo esc_html__('Menu label', 'project-reviews'); ?>
+                                    <?php echo esc_html__('Menu label', 'scorva'); ?>
                                 </label>
                                 <input name="<?php echo esc_attr($option_key); ?>[theme_nav_menu_label]"
                                     id="pr-theme-nav-menu-label" type="text" class="regular-text"
@@ -188,12 +188,12 @@ final class Admin_Settings
                             </p>
                             <p>
                                 <label for="pr-reviews-entry-url">
-                                    <?php echo esc_html__('Reviews entry URL', 'project-reviews'); ?>
+                                    <?php echo esc_html__('Reviews entry URL', 'scorva'); ?>
                                 </label>
                                 <input id="pr-reviews-entry-url" type="url" class="large-text" readonly
                                     value="<?php echo esc_attr(ThemeNavBootstrap::reviews_url()); ?>" />
                                 <button type="button" class="button" id="pr-copy-reviews-url">
-                                    <?php echo esc_html__('Copy URL', 'project-reviews'); ?>
+                                    <?php echo esc_html__('Copy URL', 'scorva'); ?>
                                 </button>
                             </p>
                             <p class="description">
@@ -202,7 +202,7 @@ final class Admin_Settings
                                 echo esc_html(
                                     sprintf(
                                         /* translators: %s: bootstrap status */
-                                        __('Bootstrap status: %s', 'project-reviews'),
+                                        __('Bootstrap status: %s', 'scorva'),
                                         $status
                                     )
                                 );
@@ -210,14 +210,14 @@ final class Admin_Settings
                                 —
                                 <?php echo esc_html__(
                                     'If automatic setup failed, add a custom link under Appearance → Menus.',
-                                    'project-reviews'
+                                    'scorva'
                                 ); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <?php echo esc_html__('Faculty directory', 'project-reviews'); ?>
+                            <?php echo esc_html__('Faculty directory', 'scorva'); ?>
                         </th>
                         <td>
                             <label>
@@ -226,26 +226,26 @@ final class Admin_Settings
                                     value="1" <?php checked(!empty($settings['faculty_bridge_enabled'])); ?> />
                                 <?php echo esc_html__(
                                     'Enable faculty directory bridge (read from wp_faculty when available)',
-                                    'project-reviews'
+                                    'scorva'
                                 ); ?>
                             </label>
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><?php echo esc_html__('Notifications', 'project-reviews'); ?></th>
+                        <th scope="row"><?php echo esc_html__('Notifications', 'scorva'); ?></th>
                         <td>
                             <label>
                                 <input type="checkbox"
                                     name="<?php echo esc_attr($option_key); ?>[notify_rubric_open]"
                                     value="1" <?php checked(!empty($settings['notify_rubric_open'])); ?> />
-                                <?php echo esc_html__('Email when a rubric is confirmed (marking opens)', 'project-reviews'); ?>
+                                <?php echo esc_html__('Email when a rubric is confirmed (marking opens)', 'scorva'); ?>
                             </label>
                             <br />
                             <label>
                                 <input type="checkbox"
                                     name="<?php echo esc_attr($option_key); ?>[notify_session_closed]"
                                     value="1" <?php checked(!empty($settings['notify_session_closed'])); ?> />
-                                <?php echo esc_html__('Email when a project is closed', 'project-reviews'); ?>
+                                <?php echo esc_html__('Email when a project is closed', 'scorva'); ?>
                             </label>
                         </td>
                     </tr>
@@ -254,41 +254,41 @@ final class Admin_Settings
                 <p class="description">
                     <?php echo esc_html__(
                         'Panel report PDF letterhead and layout are configured per project under Settings → Panel Report in the coordinator workspace.',
-                        'project-reviews'
+                        'scorva'
                     ); ?>
                 </p>
 
-                <h2><?php echo esc_html__('Email delivery (SMTP)', 'project-reviews'); ?></h2>
+                <h2><?php echo esc_html__('Email delivery (SMTP)', 'scorva'); ?></h2>
                 <p><?php echo esc_html__(
                     'Send reviewer invitations and notifications through a dedicated SMTP server. Leave the host empty to use the default WordPress mailer.',
-                    'project-reviews'
+                    'scorva'
                 ); ?></p>
                 <?php self::render_smtp_settings(); ?>
 
-                <h2><?php echo esc_html__('Backup', 'project-reviews'); ?></h2>
+                <h2><?php echo esc_html__('Backup', 'scorva'); ?></h2>
                 <p><?php echo esc_html__(
                     'Download a ZIP archive with plugin database tables, options, and Excel reports for every project. Use this before migration, disaster recovery, or before enabling destructive uninstall below.',
-                    'project-reviews'
+                    'scorva'
                 ); ?></p>
                 <p>
                     <button type="button" class="button button-secondary" id="pr-download-full-backup">
-                        <?php echo esc_html__('Download full backup (ZIP)', 'project-reviews'); ?>
+                        <?php echo esc_html__('Download full backup (ZIP)', 'scorva'); ?>
                     </button>
                     <span id="pr-backup-status" class="description" style="margin-left:8px;"></span>
                 </p>
 
-                <h2><?php echo esc_html__('Lifecycle', 'project-reviews'); ?></h2>
+                <h2><?php echo esc_html__('Lifecycle', 'scorva'); ?></h2>
                 <p><?php echo esc_html__(
                     'Deactivating the plugin keeps all review data, settings, and user accounts unchanged. Only front-end routes are flushed.',
-                    'project-reviews'
+                    'scorva'
                 ); ?></p>
                 <p><?php echo esc_html__(
                     'Deleting the plugin from WordPress removes database tables, options, and plugin capabilities only when the checkbox below was enabled and saved before you delete the plugin.',
-                    'project-reviews'
+                    'scorva'
                 ); ?></p>
                 <table class="form-table" role="presentation">
                     <tr>
-                        <th scope="row"><?php echo esc_html__('Uninstall data', 'project-reviews'); ?></th>
+                        <th scope="row"><?php echo esc_html__('Uninstall data', 'scorva'); ?></th>
                         <td>
                             <label>
                                 <input type="checkbox"
@@ -297,7 +297,7 @@ final class Admin_Settings
                                 <?php echo esc_html(
                                     sprintf(
                                         /* translators: %s: short application name */
-                                        __('Remove all %s data when uninstalling the plugin', 'project-reviews'),
+                                        __('Remove all %s data when uninstalling the plugin', 'scorva'),
                                         $app_short
                                     )
                                 ); ?>
@@ -305,17 +305,17 @@ final class Admin_Settings
                             <p class="description">
                                 <?php echo esc_html__(
                                     'When unchecked (default), uninstall leaves pr_* tables and options in place for reinstall or manual recovery. When checked, uninstall drops all plugin tables and options. WordPress user accounts are never deleted. Back up your site before enabling this option.',
-                                    'project-reviews'
+                                    'scorva'
                                 ); ?>
                             </p>
                         </td>
                     </tr>
                 </table>
 
-                <h2><?php echo esc_html__('Capability defaults', 'project-reviews'); ?></h2>
+                <h2><?php echo esc_html__('Capability defaults', 'scorva'); ?></h2>
                 <p><?php echo esc_html__(
                     'On activation, administrators receive all capabilities. Coordinators may manage projects and override individual marks with a mandatory audit reason. Reviewers may enter marks only.',
-                    'project-reviews'
+                    'scorva'
                 ); ?></p>
                 <ul class="ul-disc">
                     <?php foreach (Capabilities::all() as $cap) : ?>
@@ -337,7 +337,7 @@ final class Admin_Settings
         <table class="form-table" role="presentation">
             <tr>
                 <th scope="row">
-                    <label for="pr-smtp-host"><?php echo esc_html__('SMTP host', 'project-reviews'); ?></label>
+                    <label for="pr-smtp-host"><?php echo esc_html__('SMTP host', 'scorva'); ?></label>
                 </th>
                 <td>
                     <input name="<?php echo esc_attr($smtp_key); ?>[host]"
@@ -348,7 +348,7 @@ final class Admin_Settings
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="pr-smtp-port"><?php echo esc_html__('Port', 'project-reviews'); ?></label>
+                    <label for="pr-smtp-port"><?php echo esc_html__('Port', 'scorva'); ?></label>
                 </th>
                 <td>
                     <input name="<?php echo esc_attr($smtp_key); ?>[port]"
@@ -358,21 +358,21 @@ final class Admin_Settings
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="pr-smtp-encryption"><?php echo esc_html__('Encryption', 'project-reviews'); ?></label>
+                    <label for="pr-smtp-encryption"><?php echo esc_html__('Encryption', 'scorva'); ?></label>
                 </th>
                 <td>
                     <select name="<?php echo esc_attr($smtp_key); ?>[encryption]" id="pr-smtp-encryption">
                         <option value="tls" <?php selected((string) $smtp['encryption'], 'tls'); ?>>TLS</option>
                         <option value="ssl" <?php selected((string) $smtp['encryption'], 'ssl'); ?>>SSL</option>
                         <option value="none" <?php selected((string) $smtp['encryption'], 'none'); ?>>
-                            <?php echo esc_html__('None', 'project-reviews'); ?>
+                            <?php echo esc_html__('None', 'scorva'); ?>
                         </option>
                     </select>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="pr-smtp-username"><?php echo esc_html__('Username', 'project-reviews'); ?></label>
+                    <label for="pr-smtp-username"><?php echo esc_html__('Username', 'scorva'); ?></label>
                 </th>
                 <td>
                     <input name="<?php echo esc_attr($smtp_key); ?>[username]"
@@ -382,7 +382,7 @@ final class Admin_Settings
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="pr-smtp-password"><?php echo esc_html__('Password', 'project-reviews'); ?></label>
+                    <label for="pr-smtp-password"><?php echo esc_html__('Password', 'scorva'); ?></label>
                 </th>
                 <td>
                     <input name="<?php echo esc_attr($smtp_key); ?>[password]"
@@ -390,17 +390,17 @@ final class Admin_Settings
                         value=""
                         placeholder="<?php echo esc_attr(
                             !empty($smtp['has_password'])
-                                ? __('Saved — leave blank to keep', 'project-reviews')
+                                ? __('Saved — leave blank to keep', 'scorva')
                                 : ''
                         ); ?>" />
                     <p class="description">
-                        <?php echo esc_html__('Stored encrypted. Leave blank to keep the current password.', 'project-reviews'); ?>
+                        <?php echo esc_html__('Stored encrypted. Leave blank to keep the current password.', 'scorva'); ?>
                     </p>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
-                    <label for="pr-smtp-from-email"><?php echo esc_html__('From email', 'project-reviews'); ?></label>
+                    <label for="pr-smtp-from-email"><?php echo esc_html__('From email', 'scorva'); ?></label>
                 </th>
                 <td>
                     <input name="<?php echo esc_attr($smtp_key); ?>[from_email]"
@@ -409,22 +409,22 @@ final class Admin_Settings
                     <p class="description">
                         <?php echo esc_html__(
                             'Sender address for plugin emails. Should match the SMTP account to avoid spam filtering. The From name is taken from the branding settings above.',
-                            'project-reviews'
+                            'scorva'
                         ); ?>
                     </p>
                 </td>
             </tr>
             <tr>
-                <th scope="row"><?php echo esc_html__('Test', 'project-reviews'); ?></th>
+                <th scope="row"><?php echo esc_html__('Test', 'scorva'); ?></th>
                 <td>
                     <button type="button" class="button button-secondary" id="pr-smtp-send-test">
-                        <?php echo esc_html__('Send test email', 'project-reviews'); ?>
+                        <?php echo esc_html__('Send test email', 'scorva'); ?>
                     </button>
                     <span id="pr-smtp-test-status" class="description" style="margin-left:8px;"></span>
                     <p class="description">
                         <?php echo esc_html__(
                             'Sends a test message to your account email using the saved settings. Save changes first.',
-                            'project-reviews'
+                            'scorva'
                         ); ?>
                     </p>
                 </td>
@@ -461,7 +461,7 @@ final class Admin_Settings
         ?>
         <table class="form-table" role="presentation">
             <tr>
-                <th scope="row"><?php echo esc_html__('Logo', 'project-reviews'); ?></th>
+                <th scope="row"><?php echo esc_html__('Logo', 'scorva'); ?></th>
                 <td>
                     <input type="hidden"
                         name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][letterhead][blocks][0][type]"
@@ -470,10 +470,10 @@ final class Admin_Settings
                         name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][letterhead][blocks][0][attachment_id]"
                         value="<?php echo esc_attr((string) $logo_attachment); ?>" />
                     <button type="button" class="button" id="pr-pdf-logo-select">
-                        <?php echo esc_html__('Select logo', 'project-reviews'); ?>
+                        <?php echo esc_html__('Select logo', 'scorva'); ?>
                     </button>
                     <button type="button" class="button" id="pr-pdf-logo-clear">
-                        <?php echo esc_html__('Remove', 'project-reviews'); ?>
+                        <?php echo esc_html__('Remove', 'scorva'); ?>
                     </button>
                     <div id="pr-pdf-logo-preview" style="margin-top:8px;">
                         <?php if ($logo_attachment > 0) : ?>
@@ -482,7 +482,7 @@ final class Admin_Settings
                     </div>
                     <p>
                         <label for="pr-pdf-logo-width">
-                            <?php echo esc_html__('Logo width (inches)', 'project-reviews'); ?>
+                            <?php echo esc_html__('Logo width (inches)', 'scorva'); ?>
                         </label>
                         <input type="number" step="0.1" min="0.5" max="8" class="small-text"
                             id="pr-pdf-logo-width"
@@ -493,9 +493,9 @@ final class Admin_Settings
             </tr>
         </table>
 
-        <h3><?php echo esc_html__('Letterhead text', 'project-reviews'); ?></h3>
+        <h3><?php echo esc_html__('Letterhead text', 'scorva'); ?></h3>
         <p class="description">
-            <?php echo esc_html__('First two lines are typically department and school names. Add more lines as needed.', 'project-reviews'); ?>
+            <?php echo esc_html__('First two lines are typically department and school names. Add more lines as needed.', 'scorva'); ?>
         </p>
         <div id="pr-letterhead-blocks">
             <?php
@@ -512,14 +512,14 @@ final class Admin_Settings
         </div>
         <p>
             <button type="button" class="button" id="pr-letterhead-add">
-                <?php echo esc_html__('Add letterhead line', 'project-reviews'); ?>
+                <?php echo esc_html__('Add letterhead line', 'scorva'); ?>
             </button>
         </p>
 
-        <h3><?php echo esc_html__('Scores table', 'project-reviews'); ?></h3>
+        <h3><?php echo esc_html__('Scores table', 'scorva'); ?></h3>
         <table class="form-table" role="presentation">
             <tr>
-                <th scope="row"><?php echo esc_html__('Columns', 'project-reviews'); ?></th>
+                <th scope="row"><?php echo esc_html__('Columns', 'scorva'); ?></th>
                 <td>
                     <input type="hidden"
                         name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][show_sr_no]"
@@ -528,28 +528,28 @@ final class Admin_Settings
                         <input type="checkbox"
                             name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][show_attendance]"
                             value="1" <?php checked(!isset($table['show_attendance']) || !empty($table['show_attendance'])); ?> />
-                        <?php echo esc_html__('Attendance column', 'project-reviews'); ?>
+                        <?php echo esc_html__('Attendance column', 'scorva'); ?>
                     </label>
                     <br />
                     <label>
                         <input type="checkbox"
                             name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][show_project_title]"
                             value="1" <?php checked(!isset($table['show_project_title']) || !empty($table['show_project_title'])); ?> />
-                        <?php echo esc_html__('Project title column', 'project-reviews'); ?>
+                        <?php echo esc_html__('Project title column', 'scorva'); ?>
                     </label>
                     <br />
                     <label>
                         <input type="checkbox"
                             name="<?php echo esc_attr($option_key); ?>[panel_report_pdf][table][show_guide_name]"
                             value="1" <?php checked(!empty($table['show_guide_name'])); ?> />
-                        <?php echo esc_html__('Guide name column', 'project-reviews'); ?>
+                        <?php echo esc_html__('Guide name column', 'scorva'); ?>
                     </label>
                 </td>
             </tr>
             <tr>
                 <th scope="row">
                     <label for="pr-pdf-attendance-header">
-                        <?php echo esc_html__('Attendance header', 'project-reviews'); ?>
+                        <?php echo esc_html__('Attendance header', 'scorva'); ?>
                     </label>
                 </th>
                 <td>
@@ -561,7 +561,7 @@ final class Admin_Settings
             <tr>
                 <th scope="row">
                     <label for="pr-pdf-project-field">
-                        <?php echo esc_html__('Project title field key', 'project-reviews'); ?>
+                        <?php echo esc_html__('Project title field key', 'scorva'); ?>
                     </label>
                 </th>
                 <td>
@@ -571,7 +571,7 @@ final class Admin_Settings
                     <p class="description">
                         <?php echo esc_html__(
                             'Registry custom field key when per-review project title is empty (default: project_title).',
-                            'project-reviews'
+                            'scorva'
                         ); ?>
                     </p>
                 </td>
@@ -579,7 +579,7 @@ final class Admin_Settings
             <tr>
                 <th scope="row">
                     <label for="pr-pdf-guide-header">
-                        <?php echo esc_html__('Guide column header', 'project-reviews'); ?>
+                        <?php echo esc_html__('Guide column header', 'scorva'); ?>
                     </label>
                 </th>
                 <td>
@@ -590,10 +590,10 @@ final class Admin_Settings
             </tr>
         </table>
 
-        <h3><?php echo esc_html__('Signatures', 'project-reviews'); ?></h3>
+        <h3><?php echo esc_html__('Signatures', 'scorva'); ?></h3>
         <table class="form-table" role="presentation">
             <tr>
-                <th scope="row"><?php echo esc_html__('Panel coordinator', 'project-reviews'); ?></th>
+                <th scope="row"><?php echo esc_html__('Panel coordinator', 'scorva'); ?></th>
                 <td>
                     <label>
                         <input type="checkbox"
@@ -601,7 +601,7 @@ final class Admin_Settings
                             value="1" <?php checked(!isset($signatures['show_panel_coordinator_line']) || !empty($signatures['show_panel_coordinator_line'])); ?> />
                         <?php echo esc_html__(
                             'Show panel coordinator line when not in reviewer roster',
-                            'project-reviews'
+                            'scorva'
                         ); ?>
                     </label>
                 </td>
@@ -609,7 +609,7 @@ final class Admin_Settings
             <tr>
                 <th scope="row">
                     <label for="pr-pdf-hod-label">
-                        <?php echo esc_html__('Head of department label', 'project-reviews'); ?>
+                        <?php echo esc_html__('Head of department label', 'scorva'); ?>
                     </label>
                 </th>
                 <td>
@@ -624,7 +624,7 @@ final class Admin_Settings
             <tr>
                 <th scope="row">
                     <label for="pr-pdf-hod-name">
-                        <?php echo esc_html__('Head of department name', 'project-reviews'); ?>
+                        <?php echo esc_html__('Head of department name', 'scorva'); ?>
                     </label>
                 </th>
                 <td>
@@ -661,20 +661,20 @@ final class Admin_Settings
         <div class="pr-letterhead-row" style="margin-bottom:12px;padding:12px;border:1px solid #ccd0d4;background:#fff;">
             <input type="hidden" name="<?php echo esc_attr($base); ?>[type]" value="text" />
             <p>
-                <label><?php echo esc_html__('Text', 'project-reviews'); ?></label><br />
+                <label><?php echo esc_html__('Text', 'scorva'); ?></label><br />
                 <input type="text" class="large-text"
                     name="<?php echo esc_attr($base); ?>[value]"
                     value="<?php echo esc_attr((string) ($block['value'] ?? '')); ?>" />
             </p>
             <p>
-                <label><?php echo esc_html__('Style', 'project-reviews'); ?></label>
+                <label><?php echo esc_html__('Style', 'scorva'); ?></label>
                 <select name="<?php echo esc_attr($base); ?>[style]">
-                    <option value="title" <?php selected($style, 'title'); ?>><?php echo esc_html__('Title', 'project-reviews'); ?></option>
-                    <option value="subtitle" <?php selected($style, 'subtitle'); ?>><?php echo esc_html__('Subtitle', 'project-reviews'); ?></option>
-                    <option value="body" <?php selected($style, 'body'); ?>><?php echo esc_html__('Body', 'project-reviews'); ?></option>
+                    <option value="title" <?php selected($style, 'title'); ?>><?php echo esc_html__('Title', 'scorva'); ?></option>
+                    <option value="subtitle" <?php selected($style, 'subtitle'); ?>><?php echo esc_html__('Subtitle', 'scorva'); ?></option>
+                    <option value="body" <?php selected($style, 'body'); ?>><?php echo esc_html__('Body', 'scorva'); ?></option>
                 </select>
                 <button type="button" class="button-link-delete pr-letterhead-remove" style="margin-left:12px;">
-                    <?php echo esc_html__('Remove', 'project-reviews'); ?>
+                    <?php echo esc_html__('Remove', 'scorva'); ?>
                 </button>
             </p>
         </div>
@@ -799,7 +799,7 @@ jQuery(function ($) {
           }
           var disposition = response.headers.get('Content-Disposition') || '';
           var match = disposition.match(/filename="([^"]+)"/);
-          var filename = match ? match[1] : 'project-reviews-backup.zip';
+          var filename = match ? match[1] : 'scorva-backup.zip';
           return response.blob().then(function (blob) {
             return { blob: blob, filename: filename };
           });

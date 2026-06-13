@@ -116,7 +116,7 @@ final class Rest_Portal
 
             return new \WP_Error(
                 'pr_portal_invalid_password',
-                __('Incorrect password. Use the password from your most recent invitation email.', 'project-reviews'),
+                __('Incorrect password. Use the password from your most recent invitation email.', 'scorva'),
                 ['status' => 401]
             );
         }
@@ -149,7 +149,7 @@ final class Rest_Portal
         if ($context === null) {
             return new \WP_Error(
                 'pr_portal_unauthorized',
-                __('Your session has expired. Open your review link and enter your password again.', 'project-reviews'),
+                __('Your session has expired. Open your review link and enter your password again.', 'scorva'),
                 ['status' => 401]
             );
         }
@@ -202,7 +202,7 @@ final class Rest_Portal
                 'pr_portal_session_closed',
                 sprintf(
                     /* translators: %s: application display name */
-                    __('This review project has been closed. Contact the coordinator if you believe this is a mistake. — %s', 'project-reviews'),
+                    __('This review project has been closed. Contact the coordinator if you believe this is a mistake. — %s', 'scorva'),
                     PluginSettings::app_display_name()
                 ),
                 ['status' => 403]
@@ -245,7 +245,7 @@ final class Rest_Portal
     {
         return new \WP_Error(
             'pr_portal_invalid_token',
-            __('This review link is no longer valid. Contact the coordinator for a new invitation.', 'project-reviews'),
+            __('This review link is no longer valid. Contact the coordinator for a new invitation.', 'scorva'),
             ['status' => 401]
         );
     }
@@ -260,7 +260,7 @@ final class Rest_Portal
         if ($failures >= self::THROTTLE_LIMIT) {
             return new \WP_Error(
                 'pr_portal_throttled',
-                __('Too many failed attempts. Try again later.', 'project-reviews'),
+                __('Too many failed attempts. Try again later.', 'scorva'),
                 ['status' => 429]
             );
         }
