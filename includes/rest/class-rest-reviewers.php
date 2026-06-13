@@ -6,7 +6,10 @@ namespace ProjectReviews;
 
 use ProjectReviews\Repositories\PanelRepository;
 use ProjectReviews\Repositories\SessionRepository;
+use ProjectReviews\Services\PluginSettings;
 use ProjectReviews\Services\ReviewerProvisionService;
+use ProjectReviews\Services\SmtpService;
+use ProjectReviews\Services\TokenService;
 
 final class Rest_Reviewers
 {
@@ -71,10 +74,10 @@ final class Rest_Reviewers
 
         register_rest_route(
             Rest_Bootstrap::NAMESPACE,
-            '/sessions/(?P<id>\d+)/reviewers/(?P<reviewer_id>\d+)/provision',
+            '/sessions/(?P<id>\d+)/reviewers/(?P<reviewer_id>\d+)/generate-credentials',
             [
                 'methods' => 'POST',
-                'callback' => [self::class, 'provision_reviewer'],
+                'callback' => [self::class, 'generate_credentials'],
                 'permission_callback' => $write,
             ]
         );
@@ -91,33 +94,14 @@ final class Rest_Reviewers
 
         register_rest_route(
             Rest_Bootstrap::NAMESPACE,
-            '/sessions/(?P<id>\d+)/reviewers/(?P<reviewer_id>\d+)/link-user',
+            '/sessions/(?P<id>\d+)/send-all-credentials',
             [
                 'methods' => 'POST',
-                'callback' => [self::class, 'link_user'],
+                'callback' => [self::class, 'send_all_credentials'],
                 'permission_callback' => $write,
             ]
         );
 
-        register_rest_route(
-            Rest_Bootstrap::NAMESPACE,
-            '/sessions/(?P<id>\d+)/invite-reviewers',
-            [
-                'methods' => 'POST',
-                'callback' => [self::class, 'invite_reviewers'],
-                'permission_callback' => $write,
-            ]
-        );
-
-        register_rest_route(
-            Rest_Bootstrap::NAMESPACE,
-            '/users/search',
-            [
-                'methods' => 'GET',
-                'callback' => [self::class, 'search_users'],
-                'permission_callback' => $write,
-            ]
-        );
     }
 
     /**
@@ -190,7 +174,7 @@ final class Rest_Reviewers
         if ($email === '' && $name === '') {
             return new \WP_Error(
                 'pr_invalid_reviewer',
-                __('Email or name is required.', 'project-reviews'),
+                __('Email or name is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -201,7 +185,7 @@ final class Rest_Reviewers
             if ($existing !== null) {
                 return new \WP_Error(
                     'pr_reviewer_email_in_session',
-                    __('This email is already assigned to a panel in this project.', 'project-reviews'),
+                    __('This email is already assigned to a panel in this project.', 'scorva'),
                     ['status' => 409]
                 );
             }
@@ -215,7 +199,7 @@ final class Rest_Reviewers
         if ($id <= 0) {
             return new \WP_Error(
                 'pr_reviewer_insert_failed',
-                __('Could not save reviewer.', 'project-reviews'),
+                __('Could not save reviewer.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -260,7 +244,7 @@ final class Rest_Reviewers
         } elseif ($panel_id > 0 && (int) ($reviewer['panel_id'] ?? 0) !== $panel_id) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found on this panel.', 'project-reviews'),
+                __('Reviewer not found on this panel.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -274,7 +258,7 @@ final class Rest_Reviewers
             if ($existing !== null && (int) ($existing['id'] ?? 0) !== $reviewer_id) {
                 return new \WP_Error(
                     'pr_reviewer_email_in_session',
-                    __('This email is already assigned to a panel in this project.', 'project-reviews'),
+                    __('This email is already assigned to a panel in this project.', 'scorva'),
                     ['status' => 409]
                 );
             }
@@ -325,7 +309,7 @@ final class Rest_Reviewers
         if ($panel_id > 0 && (int) ($reviewer['panel_id'] ?? 0) !== $panel_id) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found on this panel.', 'project-reviews'),
+                __('Reviewer not found on this panel.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -350,7 +334,7 @@ final class Rest_Reviewers
         if (!is_array($body)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import payload must be a JSON object.', 'project-reviews'),
+                __('Import payload must be a JSON object.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -359,7 +343,7 @@ final class Rest_Reviewers
         if (!is_array($rows) || $rows === []) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import requires at least one row.', 'project-reviews'),
+                __('Import requires at least one row.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -368,7 +352,7 @@ final class Rest_Reviewers
         if (!in_array($import_mode, ['append', 'replace'], true)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('import_mode must be append or replace.', 'project-reviews'),
+                __('import_mode must be append or replace.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -379,15 +363,35 @@ final class Rest_Reviewers
     /**
      * @return array<string, mixed>|\WP_Error
      */
-    public static function provision_reviewer(\WP_REST_Request $request): array|\WP_Error
+    public static function generate_credentials(\WP_REST_Request $request): array|\WP_Error
     {
         $session_id = (int) $request->get_param('id');
         $reviewer_id = (int) $request->get_param('reviewer_id');
 
-        return (new ReviewerProvisionService())->provision_reviewer($session_id, $reviewer_id);
+        $body = $request->get_json_params();
+        $send_email = !is_array($body) || !array_key_exists('send', $body) || (bool) $body['send'];
+
+        $result = (new ReviewerProvisionService())->generate_reviewer_credentials(
+            $session_id,
+            $reviewer_id,
+            'generate_reviewer_credentials',
+            $send_email
+        );
+
+        if ($result instanceof \WP_Error) {
+            return $result;
+        }
+
+        $result['smtp_configured'] = (new SmtpService())->is_configured();
+
+        return $result;
     }
 
     /**
+     * Re-send stored credentials (current token + stored password) without
+     * regenerating. Used by the per-row "Resend" button and the "Send"
+     * button in the coordinator's view-credentials modal.
+     *
      * @return array<string, mixed>|\WP_Error
      */
     public static function resend_credentials(\WP_REST_Request $request): array|\WP_Error
@@ -395,30 +399,21 @@ final class Rest_Reviewers
         $session_id = (int) $request->get_param('id');
         $reviewer_id = (int) $request->get_param('reviewer_id');
 
-        return (new ReviewerProvisionService())->resend_credentials($session_id, $reviewer_id);
-    }
+        $result = (new ReviewerProvisionService())->resend_current_credentials($session_id, $reviewer_id);
 
-    /**
-     * @return array<string, mixed>|\WP_Error
-     */
-    public static function link_user(\WP_REST_Request $request): array|\WP_Error
-    {
-        $session_id = (int) $request->get_param('id');
-        $reviewer_id = (int) $request->get_param('reviewer_id');
-        $body = $request->get_json_params();
-        if (!is_array($body)) {
-            $body = [];
+        if ($result instanceof \WP_Error) {
+            return $result;
         }
 
-        $user_id = (int) ($body['user_id'] ?? 0);
+        $result['smtp_configured'] = (new SmtpService())->is_configured();
 
-        return (new ReviewerProvisionService())->link_existing_user($session_id, $reviewer_id, $user_id);
+        return $result;
     }
 
     /**
      * @return array<string, mixed>|\WP_Error
      */
-    public static function invite_reviewers(\WP_REST_Request $request): array|\WP_Error
+    public static function send_all_credentials(\WP_REST_Request $request): array|\WP_Error
     {
         $session_id = (int) $request->get_param('id');
         $session_check = self::require_session($session_id);
@@ -426,38 +421,18 @@ final class Rest_Reviewers
             return $session_check;
         }
 
-        return (new ReviewerProvisionService())->invite_all_session_reviewers($session_id);
-    }
+        $body = $request->get_json_params();
+        $force = is_array($body) && !empty($body['force']);
 
-    /**
-     * @return array{users: list<array{id: int, display_name: string, email: string}>}|\WP_Error
-     */
-    public static function search_users(\WP_REST_Request $request): array|\WP_Error
-    {
-        $query = trim((string) ($request->get_param('q') ?? ''));
-        if ($query === '' || !function_exists('get_users')) {
-            return ['users' => []];
+        $result = (new ReviewerProvisionService())->send_all_reviewer_credentials($session_id, $force);
+
+        if ($result instanceof \WP_Error) {
+            return $result;
         }
 
-        $users = get_users([
-            'search' => '*' . $query . '*',
-            'search_columns' => ['user_login', 'user_email', 'display_name'],
-            'number' => 20,
-        ]);
+        $result['smtp_configured'] = (new SmtpService())->is_configured();
 
-        $items = [];
-        foreach ($users as $user) {
-            if (!is_object($user)) {
-                continue;
-            }
-            $items[] = [
-                'id' => (int) ($user->ID ?? 0),
-                'display_name' => (string) ($user->display_name ?? ''),
-                'email' => (string) ($user->user_email ?? ''),
-            ];
-        }
-
-        return ['users' => $items];
+        return $result;
     }
 
     /**
@@ -467,20 +442,18 @@ final class Rest_Reviewers
     private static function format_reviewer(array $reviewer, int $session_id = 0): array
     {
         $user_id = isset($reviewer['user_id']) ? (int) $reviewer['user_id'] : 0;
-        $provisioned = false;
-        if ($user_id > 0 && $session_id > 0) {
-            global $wpdb;
-            if (isset($wpdb)) {
-                $table = $wpdb->prefix . 'pr_session_reviewers';
-                $row = $wpdb->get_row(
-                    $wpdb->prepare(
-                        "SELECT provisioned_for_session FROM {$table} WHERE session_id = %d AND user_id = %d",
-                        $session_id,
-                        $user_id
-                    ),
-                    'ARRAY_A'
-                );
-                $provisioned = is_array($row) && (int) ($row['provisioned_for_session'] ?? 0) === 1;
+        $credentials_sent_at = trim((string) ($reviewer['credentials_sent_at'] ?? ''));
+        $token = trim((string) ($reviewer['token'] ?? ''));
+        $has_credentials = $token !== '' && trim((string) ($reviewer['password_hash'] ?? '')) !== '';
+
+        $password = null;
+        if ($has_credentials) {
+            $encrypted = trim((string) ($reviewer['password_encrypted'] ?? ''));
+            if ($encrypted !== '') {
+                $decrypted = (new TokenService())->decrypt_password($encrypted);
+                if ($decrypted !== '') {
+                    $password = $decrypted;
+                }
             }
         }
 
@@ -492,9 +465,11 @@ final class Rest_Reviewers
             'email' => (string) ($reviewer['email'] ?? ''),
             'weight' => (float) ($reviewer['weight'] ?? 1),
             'user_id' => $user_id > 0 ? $user_id : null,
-            'linked' => $user_id > 0,
-            'provisioned' => $provisioned,
             'is_panel_head' => (int) ($reviewer['is_panel_head'] ?? 0) === 1,
+            'has_credentials' => $has_credentials,
+            'credentials_sent_at' => $credentials_sent_at !== '' ? $credentials_sent_at : null,
+            'portal_url' => $has_credentials ? PluginSettings::portal_url_with_token($token) : null,
+            'portal_password' => $password,
         ];
     }
 
@@ -506,7 +481,7 @@ final class Rest_Reviewers
         if ((new SessionRepository())->find_by_id($id) === null) {
             return new \WP_Error(
                 'pr_session_not_found',
-                __('Project not found.', 'project-reviews'),
+                __('Project not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -523,7 +498,7 @@ final class Rest_Reviewers
         if ($panel === null || (int) $panel['session_id'] !== $session_id) {
             return new \WP_Error(
                 'pr_panel_not_found',
-                __('Panel not found.', 'project-reviews'),
+                __('Panel not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -540,7 +515,7 @@ final class Rest_Reviewers
         if ($reviewer === null) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found.', 'project-reviews'),
+                __('Reviewer not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -549,7 +524,7 @@ final class Rest_Reviewers
         if ($panel === null || (int) ($panel['session_id'] ?? 0) !== $session_id) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found.', 'project-reviews'),
+                __('Reviewer not found.', 'scorva'),
                 ['status' => 404]
             );
         }

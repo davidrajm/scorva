@@ -250,7 +250,7 @@ final class ReportsViewService
     public function consolidated_scores(int $session_id): array|\WP_Error
     {
         if ($this->sessions->find_by_id($session_id) === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $reviews_payload = [];
@@ -382,7 +382,7 @@ final class ReportsViewService
     public function consolidated_student_export(int $session_id): array|\WP_Error
     {
         if ($this->sessions->find_by_id($session_id) === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $review_specs = $this->build_consolidated_student_review_specs($session_id);
@@ -881,7 +881,7 @@ final class ReportsViewService
             for ($slot = 0; $slot < $max_slots; $slot++) {
                 $slot_label = sprintf(
                     /* translators: %d: reviewer slot number (1-based) */
-                    __('Reviewer %d', 'project-reviews'),
+                    __('Reviewer %d', 'scorva'),
                     $slot + 1
                 );
                 $slot_prefix = $prefix . $slot_label . $delim;
@@ -1155,19 +1155,19 @@ final class ReportsViewService
         $semester = trim((string) ($report_cfg['semester'] ?? ''));
 
         $preface_rows = [
-            [__('Consolidated student scores', 'project-reviews'), ''],
-            [__('Project', 'project-reviews'), $title],
-            [__('Project status', 'project-reviews'), $status],
-            [__('Generated', 'project-reviews'), $generated],
-            [__('Enrolled students', 'project-reviews'), (string) $this->sessions->count_enrolled($session_id)],
-            [__('Reviews included', 'project-reviews'), implode(', ', $review_labels)],
+            [__('Consolidated student scores', 'scorva'), ''],
+            [__('Project', 'scorva'), $title],
+            [__('Project status', 'scorva'), $status],
+            [__('Generated', 'scorva'), $generated],
+            [__('Enrolled students', 'scorva'), (string) $this->sessions->count_enrolled($session_id)],
+            [__('Reviews included', 'scorva'), implode(', ', $review_labels)],
         ];
 
         if ($program !== '') {
-            $preface_rows[] = [__('Program', 'project-reviews'), $program];
+            $preface_rows[] = [__('Program', 'scorva'), $program];
         }
         if ($semester !== '') {
-            $preface_rows[] = [__('Semester', 'project-reviews'), $semester];
+            $preface_rows[] = [__('Semester', 'scorva'), $semester];
         }
 
         $preface_rows[] = ['', ''];
@@ -1186,9 +1186,9 @@ final class ReportsViewService
     private function consolidated_session_status_label(string $status): string
     {
         return match ($status) {
-            SessionRepository::STATUS_ACTIVE => __('Active', 'project-reviews'),
-            SessionRepository::STATUS_CLOSED => __('Closed', 'project-reviews'),
-            default => __('Draft', 'project-reviews'),
+            SessionRepository::STATUS_ACTIVE => __('Active', 'scorva'),
+            SessionRepository::STATUS_CLOSED => __('Closed', 'scorva'),
+            default => __('Draft', 'scorva'),
         };
     }
 
@@ -1849,7 +1849,7 @@ final class ReportsViewService
         if ($panel === null || (int) ($panel['session_id'] ?? 0) !== $session_id) {
             return new \WP_Error(
                 'pr_panel_not_found',
-                __('Panel not found in this project.', 'project-reviews'),
+                __('Panel not found in this project.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -2075,7 +2075,7 @@ final class ReportsViewService
                 'key' => 'reviewer_slot_' . $slot,
                 'label' => sprintf(
                     /* translators: %d: reviewer slot number (1-based) */
-                    __('Reviewer %d', 'project-reviews'),
+                    __('Reviewer %d', 'scorva'),
                     $slot + 1
                 ),
                 'slot_index' => $slot,
@@ -2088,7 +2088,7 @@ final class ReportsViewService
                 'key' => $this->overall_slot_key($slot),
                 'label' => sprintf(
                     /* translators: %d: reviewer slot number (1-based) */
-                    __('Reviewer %d', 'project-reviews'),
+                    __('Reviewer %d', 'scorva'),
                     $slot + 1
                 ),
                 'slot_index' => $slot,
@@ -2100,7 +2100,7 @@ final class ReportsViewService
             'groups' => [
                 [
                     'id' => 'reviewer-overall',
-                    'label' => __('Reviewer overall', 'project-reviews'),
+                    'label' => __('Reviewer overall', 'scorva'),
                     'leaves' => $leaves,
                 ],
             ],
@@ -2318,7 +2318,7 @@ final class ReportsViewService
                 'key' => 'reviewer_slot_' . $slot,
                 'label' => sprintf(
                     /* translators: %d: reviewer slot number (1-based) */
-                    __('Reviewer %d', 'project-reviews'),
+                    __('Reviewer %d', 'scorva'),
                     $slot + 1
                 ),
                 'slot_index' => $slot,
@@ -2342,7 +2342,7 @@ final class ReportsViewService
                     'id' => 'reviewer-slot-' . $slot,
                     'label' => sprintf(
                         /* translators: %d: reviewer slot number (1-based) */
-                        __('Reviewer %d', 'project-reviews'),
+                        __('Reviewer %d', 'scorva'),
                         $slot + 1
                     ),
                     'leaves' => $leaves,
@@ -2357,7 +2357,7 @@ final class ReportsViewService
                         'key' => $this->slot_leaf_key($criterion_id, $slot),
                         'label' => sprintf(
                             /* translators: %d: reviewer slot number (1-based) */
-                            __('Reviewer %d', 'project-reviews'),
+                            __('Reviewer %d', 'scorva'),
                             $slot + 1
                         ),
                         'criterion_id' => $criterion_id,
@@ -2851,12 +2851,12 @@ final class ReportsViewService
     private function require_review(int $session_id, int $review_id): array|\WP_Error
     {
         if ($this->sessions->find_by_id($session_id) === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         return $review;
@@ -2875,7 +2875,7 @@ final class ReportsViewService
         if ((string) ($review['status'] ?? '') !== ReviewRepository::STATUS_CONFIRMED) {
             return new \WP_Error(
                 'rubric_not_confirmed',
-                __('The rubric for this review is not confirmed yet.', 'project-reviews'),
+                __('The rubric for this review is not confirmed yet.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -3112,6 +3112,6 @@ final class ReportsViewService
             }
         }
 
-        return sprintf(/* translators: %d: reviewer user id */ __('Reviewer %d', 'project-reviews'), $user_id);
+        return sprintf(/* translators: %d: reviewer user id */ __('Reviewer %d', 'scorva'), $user_id);
     }
 }

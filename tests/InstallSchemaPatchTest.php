@@ -91,6 +91,41 @@ final class InstallSchemaPatchTest extends TestCase
         $this->assertTrue($this->wpdb->has_column($review_table, 'is_panel_head'));
     }
 
+    public function test_ensure_reviewer_credentials_columns_adds_missing_columns(): void
+    {
+        $table = $this->wpdb->prefix . 'pr_panel_reviewers';
+        $this->wpdb->register_table_columns($table, [
+            'id', 'panel_id', 'name', 'email', 'user_id', 'weight', 'is_panel_head',
+        ]);
+
+        $this->assertTrue(Install::ensure_reviewer_credentials_columns($this->wpdb));
+        $this->assertTrue($this->wpdb->has_column($table, 'token'));
+        $this->assertTrue($this->wpdb->has_column($table, 'password_hash'));
+        $this->assertTrue($this->wpdb->has_column($table, 'password_encrypted'));
+        $this->assertTrue($this->wpdb->has_column($table, 'credentials_sent_at'));
+
+        $unique_key_queries = array_values(array_filter(
+            $this->wpdb->queries,
+            static fn (string $sql): bool => str_contains($sql, 'ADD UNIQUE KEY token')
+        ));
+        $this->assertCount(1, $unique_key_queries);
+
+        // Re-running must be a no-op, including the unique index.
+        $this->assertTrue(Install::ensure_reviewer_credentials_columns($this->wpdb));
+        $unique_key_queries = array_values(array_filter(
+            $this->wpdb->queries,
+            static fn (string $sql): bool => str_contains($sql, 'ADD UNIQUE KEY token')
+        ));
+        $this->assertCount(1, $unique_key_queries);
+    }
+
+    public function test_ensure_reviewer_credentials_columns_returns_false_without_table(): void
+    {
+        $empty = new FakeWpdb();
+
+        $this->assertFalse(Install::ensure_reviewer_credentials_columns($empty));
+    }
+
     public function test_ensure_coordinator_marks_locked_column_adds_missing_column(): void
     {
         $table = $this->wpdb->prefix . 'pr_reviews';

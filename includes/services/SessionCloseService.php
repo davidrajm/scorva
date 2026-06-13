@@ -6,8 +6,13 @@ namespace ProjectReviews\Services;
 
 use ProjectReviews\Emails\SessionClosedEmail;
 use ProjectReviews\Repositories\MarkRepository;
+use ProjectReviews\Repositories\PanelRepository;
 use ProjectReviews\Repositories\SessionRepository;
 
+/**
+ * Closing a project locks its status; the reviewer portal refuses
+ * token logins for closed projects, so no account teardown is needed.
+ */
 final class SessionCloseService
 {
     private object $wpdb;
@@ -36,11 +41,10 @@ final class SessionCloseService
      * @return array{
      *   ok: bool,
      *   error?: string,
-     *   session?: array<string, mixed>,
-     *   disabled_user_ids?: list<int>
+     *   session?: array<string, mixed>
      * }
      */
-    public function close(int $session_id, bool $also_disable_coordinators = false, ?int $actor_user_id = null): array
+    public function close(int $session_id, ?int $actor_user_id = null): array
     {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
@@ -59,58 +63,6 @@ final class SessionCloseService
 
         $this->sessions->update($session_id, ['status' => SessionRepository::STATUS_CLOSED]);
 
-        $disabled = [];
-        foreach ($this->list_session_reviewers($session_id) as $row) {
-            $user_id = (int) ($row['user_id'] ?? 0);
-            if ($user_id <= 0) {
-                continue;
-            }
-
-            $provisioned = !empty($row['provisioned_for_session']);
-            $is_coordinator_capable = $this->user_has_cap($user_id, PR_CAP_MANAGE_SESSIONS);
-
-            if ($provisioned && ! $is_coordinator_capable) {
-                $this->disable_user($user_id, $session_id);
-                $disabled[] = $user_id;
-                $this->audit->log(
-                    'account_disabled',
-                    'session',
-                    $session_id,
-                    null,
-                    (string) $user_id,
-                    $actor_user_id
-                );
-                continue;
-            }
-
-            if ($provisioned && $is_coordinator_capable && $also_disable_coordinators) {
-                $this->disable_user($user_id, $session_id);
-                $disabled[] = $user_id;
-                $this->audit->log(
-                    'account_disabled',
-                    'session',
-                    $session_id,
-                    null,
-                    (string) $user_id,
-                    $actor_user_id
-                );
-                continue;
-            }
-
-            if ($also_disable_coordinators && $is_coordinator_capable) {
-                $this->disable_user($user_id, $session_id);
-                $disabled[] = $user_id;
-                $this->audit->log(
-                    'account_disabled',
-                    'session',
-                    $session_id,
-                    null,
-                    (string) $user_id,
-                    $actor_user_id
-                );
-            }
-        }
-
         $this->audit->log(
             'session_closed',
             'session',
@@ -122,13 +74,12 @@ final class SessionCloseService
 
         $updated = $this->sessions->find_by_id($session_id);
         if ($updated !== null && PluginSettings::notify_session_closed()) {
-            SessionClosedEmail::send_for_session($updated, $disabled);
+            SessionClosedEmail::send_for_session($updated);
         }
 
         return [
             'ok' => true,
             'session' => $updated ?? $session,
-            'disabled_user_ids' => $disabled,
         ];
     }
 
@@ -136,8 +87,7 @@ final class SessionCloseService
      * @return array{
      *   ok: bool,
      *   error?: string,
-     *   session?: array<string, mixed>,
-     *   reenabled_user_ids?: list<int>
+     *   session?: array<string, mixed>
      * }
      */
     public function reopen(int $session_id, ?int $actor_user_id = null): array
@@ -160,25 +110,6 @@ final class SessionCloseService
         $restored_status = $this->resolve_reopen_status($session_id);
         $this->sessions->update($session_id, ['status' => $restored_status]);
 
-        $reenabled = [];
-        foreach ($this->list_disabled_session_reviewers($session_id) as $row) {
-            $user_id = (int) ($row['user_id'] ?? 0);
-            if ($user_id <= 0) {
-                continue;
-            }
-
-            $this->enable_user($user_id, $session_id);
-            $reenabled[] = $user_id;
-            $this->audit->log(
-                'account_enabled',
-                'session',
-                $session_id,
-                null,
-                (string) $user_id,
-                $actor_user_id
-            );
-        }
-
         $this->audit->log(
             'session_reopened',
             'session',
@@ -193,12 +124,11 @@ final class SessionCloseService
         return [
             'ok' => true,
             'session' => $updated ?? $session,
-            'reenabled_user_ids' => $reenabled,
         ];
     }
 
     /**
-     * @return array{status: string, open_marks: int, provisioned_users: int, disabled_accounts: int}|null
+     * @return array{status: string, open_marks: int, credentialed_reviewers: int}|null
      */
     public function close_preview(int $session_id): ?array
     {
@@ -214,22 +144,20 @@ final class SessionCloseService
             new MarkRepository($this->wpdb),
         );
 
-        $provisioned = 0;
-        foreach ($this->list_session_reviewers($session_id) as $row) {
-            if (!empty($row['provisioned_for_session'])) {
-                ++$provisioned;
+        $credentialed = 0;
+        foreach ((new PanelRepository($this->wpdb))->list_reviewers_for_session($session_id) as $reviewer) {
+            if (
+                trim((string) ($reviewer['token'] ?? '')) !== ''
+                && trim((string) ($reviewer['password_hash'] ?? '')) !== ''
+            ) {
+                ++$credentialed;
             }
         }
 
-        $status = (string) ($session['status'] ?? SessionRepository::STATUS_DRAFT);
-
         return [
-            'status' => $status,
+            'status' => (string) ($session['status'] ?? SessionRepository::STATUS_DRAFT),
             'open_marks' => $marks->count_open_marks($session_id),
-            'provisioned_users' => $provisioned,
-            'disabled_accounts' => $status === SessionRepository::STATUS_CLOSED
-                ? $this->count_disabled_accounts($session_id)
-                : 0,
+            'credentialed_reviewers' => $credentialed,
         ];
     }
 
@@ -250,77 +178,5 @@ final class SessionCloseService
         }
 
         return SessionRepository::STATUS_ACTIVE;
-    }
-
-    private function count_disabled_accounts(int $session_id): int
-    {
-        return count($this->list_disabled_session_reviewers($session_id));
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function list_disabled_session_reviewers(int $session_id): array
-    {
-        return array_values(
-            array_filter(
-                $this->list_session_reviewers($session_id),
-                static fn (array $row): bool => !empty($row['disabled_at'])
-            )
-        );
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function list_session_reviewers(int $session_id): array
-    {
-        $table = $this->wpdb->prefix . 'pr_session_reviewers';
-        $sql = $this->wpdb->prepare(
-            "SELECT * FROM {$table} WHERE session_id = %d",
-            $session_id
-        );
-        $rows = $this->wpdb->get_results($sql, 'ARRAY_A');
-
-        return is_array($rows) ? $rows : [];
-    }
-
-    private function disable_user(int $user_id, int $session_id): void
-    {
-        $reviewers_table = $this->wpdb->prefix . 'pr_session_reviewers';
-        $this->wpdb->update(
-            $reviewers_table,
-            ['disabled_at' => gmdate('Y-m-d H:i:s')],
-            ['session_id' => $session_id, 'user_id' => $user_id],
-            ['%s'],
-            ['%d', '%d']
-        );
-
-        if (function_exists('update_user_meta')) {
-            update_user_meta($user_id, 'pr_account_disabled', '1');
-        }
-    }
-
-    private function enable_user(int $user_id, int $session_id): void
-    {
-        $reviewers_table = $this->wpdb->prefix . 'pr_session_reviewers';
-        $this->wpdb->update(
-            $reviewers_table,
-            ['disabled_at' => null],
-            ['session_id' => $session_id, 'user_id' => $user_id],
-            ['%s'],
-            ['%d', '%d']
-        );
-
-        SessionReviewerAccountMeta::clear_account_disabled_meta_if_unused($this->wpdb, $user_id);
-    }
-
-    private function user_has_cap(int $user_id, string $cap): bool
-    {
-        if (!function_exists('user_can')) {
-            return false;
-        }
-
-        return user_can($user_id, $cap);
     }
 }

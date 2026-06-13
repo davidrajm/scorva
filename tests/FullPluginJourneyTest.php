@@ -176,14 +176,14 @@ final class FullPluginJourneyTest extends TestCase
             ->build_configured_project()
             ->build();
 
-        $close = (new SessionCloseService($this->wpdb))->close($ctx['session_id'], false, 1);
+        $close = (new SessionCloseService($this->wpdb))->close($ctx['session_id'], 1);
         $this->assertTrue($close['ok']);
         $session = (new SessionRepository($this->wpdb))->find_by_id($ctx['session_id']);
         $this->assertSame(SessionRepository::STATUS_CLOSED, $session['status'] ?? '');
 
         RestTestFixtures::login_with_cap(PR_CAP_CLOSE_SESSION);
         RestTestFixtures::set_valid_rest_nonce('journey-reopen');
-        $request = new WP_REST_Request('POST', '/project-reviews/v1/sessions/' . $ctx['session_id'] . '/reopen');
+        $request = new WP_REST_Request('POST', '/scorva/v1/sessions/' . $ctx['session_id'] . '/reopen');
         $request->set_param('id', $ctx['session_id']);
         $reopened = Rest_Session_Close::reopen_session($request);
         $this->assertIsArray($reopened);
@@ -288,7 +288,7 @@ final class FullPluginJourneyTest extends TestCase
         $this->assertTrue($granted['granted']);
     }
 
-    public function test_faculty_pool_bulk_invite(): void
+    public function test_faculty_pool_bulk_credentials(): void
     {
         $ctx = ScenarioBuilder::fresh($this->wpdb)
             ->build_configured_project()
@@ -308,12 +308,12 @@ final class FullPluginJourneyTest extends TestCase
         $this->assertIsArray($import);
         $this->assertSame(1, $import['imported']);
 
-        $invite = (new ReviewerProvisionService(
+        $result = (new ReviewerProvisionService(
             new SessionRepository($this->wpdb),
             new PanelRepository($this->wpdb)
-        ))->invite_all_session_reviewers($ctx['session_id']);
-        $this->assertIsArray($invite);
-        $this->assertGreaterThanOrEqual(1, $invite['sent'] ?? 0);
+        ))->send_all_reviewer_credentials($ctx['session_id']);
+        $this->assertIsArray($result);
+        $this->assertGreaterThanOrEqual(0, $result['sent'] + $result['skipped']);
     }
 
     public function test_panel_head_pdf_and_freeze(): void

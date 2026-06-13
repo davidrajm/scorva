@@ -127,7 +127,7 @@ final class Rest_Review_Assignments
         if (!is_array($rows)) {
             return new \WP_Error(
                 'pr_invalid_assignments',
-                __('Students must be an array.', 'project-reviews'),
+                __('Students must be an array.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -184,7 +184,7 @@ final class Rest_Review_Assignments
         if ($panel_id <= 0 || $user_id <= 0) {
             return new \WP_Error(
                 'pr_invalid_reviewer',
-                __('panel_id and user_id are required.', 'project-reviews'),
+                __('panel_id and user_id are required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -223,7 +223,7 @@ final class Rest_Review_Assignments
         if ($panel_id <= 0 || $user_id <= 0) {
             return new \WP_Error(
                 'pr_invalid_reviewer',
-                __('panel_id and user_id are required.', 'project-reviews'),
+                __('panel_id and user_id are required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -264,7 +264,7 @@ final class Rest_Review_Assignments
         if ($panel_id <= 0 || $user_id <= 0) {
             return new \WP_Error(
                 'pr_invalid_reviewer',
-                __('panel_id and user_id are required.', 'project-reviews'),
+                __('panel_id and user_id are required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -291,7 +291,7 @@ final class Rest_Review_Assignments
         $source_review_id = (int) $request->get_param('source_review_id');
         $reviews = new ReviewRepository();
         if (!$reviews->belongs_to_session($source_review_id, $context['session_id'])) {
-            return new \WP_Error('pr_review_not_found', __('Source review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Source review not found.', 'scorva'), ['status' => 404]);
         }
 
         $context['assignments']->copy_from_review($source_review_id, $context['review_id']);
@@ -336,12 +336,12 @@ final class Rest_Review_Assignments
 
         $sessions = new SessionRepository();
         if ($sessions->find_by_id($session_id) === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $reviews = new ReviewRepository();
         if (!$reviews->belongs_to_session($review_id, $session_id)) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         return [

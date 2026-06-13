@@ -57,7 +57,7 @@ final class Rest_Session_Close
         if ($preview === null) {
             return new \WP_Error(
                 'pr_session_not_found',
-                __('Project not found.', 'project-reviews'),
+                __('Project not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -83,12 +83,11 @@ final class Rest_Session_Close
             $error = $result['error'] ?? 'close_failed';
             $status = $error === 'session_not_found' ? 404 : 400;
 
-            return new \WP_Error($error, __('Unable to close project.', 'project-reviews'), ['status' => $status]);
+            return new \WP_Error($error, __('Unable to close project.', 'scorva'), ['status' => $status]);
         }
 
         return [
             'session' => $result['session'] ?? null,
-            'disabled_user_ids' => $result['disabled_user_ids'] ?? [],
         ];
     }
 
@@ -104,12 +103,11 @@ final class Rest_Session_Close
             $error = $result['error'] ?? 'reopen_failed';
             $status = $error === 'session_not_found' ? 404 : 400;
 
-            return new \WP_Error($error, __('Unable to reopen project.', 'project-reviews'), ['status' => $status]);
+            return new \WP_Error($error, __('Unable to reopen project.', 'scorva'), ['status' => $status]);
         }
 
         return [
             'session' => $result['session'] ?? null,
-            'reenabled_user_ids' => $result['reenabled_user_ids'] ?? [],
         ];
     }
 }

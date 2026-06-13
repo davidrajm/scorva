@@ -43,7 +43,7 @@ final class FacultyBridgeService
         if (!PluginSettings::faculty_bridge_enabled()) {
             return new \WP_Error(
                 'faculty_bridge_unavailable',
-                __('Faculty directory bridge is disabled in plugin settings.', 'project-reviews'),
+                __('Faculty directory bridge is disabled in plugin settings.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -52,7 +52,7 @@ final class FacultyBridgeService
         if (!isset($wpdb)) {
             return new \WP_Error(
                 'faculty_bridge_unavailable',
-                __('Database is not available.', 'project-reviews'),
+                __('Database is not available.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -61,7 +61,7 @@ final class FacultyBridgeService
         if (! $this->table_exists($table)) {
             return new \WP_Error(
                 'faculty_bridge_unavailable',
-                __('Faculty directory table was not found.', 'project-reviews'),
+                __('Faculty directory table was not found.', 'scorva'),
                 ['status' => 400]
             );
         }

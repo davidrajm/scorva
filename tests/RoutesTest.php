@@ -74,7 +74,7 @@ final class RoutesTest extends TestCase
         $this->assertStringContainsString('templates/app-shell.php', (string) $GLOBALS['pr_test_template_included']);
     }
 
-    public function test_guest_reviewer_route_redirects_to_landing(): void
+    public function test_guest_reviewer_route_renders_reviewer_shell_for_token_portal(): void
     {
         $GLOBALS['pr_test_query_var'] = 'reviewer';
         $GLOBALS['pr_test_current_user_id'] = 0;
@@ -82,8 +82,8 @@ final class RoutesTest extends TestCase
         Routes::handle_template();
 
         $this->assertFalse($GLOBALS['pr_test_auth_redirect_called']);
-        $this->assertSame(home_url('/reviews/'), $GLOBALS['pr_test_redirect_url']);
-        $this->assertNull($GLOBALS['pr_test_template_included']);
+        $this->assertNull($GLOBALS['pr_test_redirect_url']);
+        $this->assertSame('reviewer', $GLOBALS['pr_test_template_app']);
     }
 
     public function test_guest_coordinator_deep_path_redirects_to_landing(): void
@@ -193,9 +193,9 @@ final class RoutesTest extends TestCase
         Routes::handle_template();
         pr_test_run_wp_enqueue_scripts();
 
-        $this->assertScriptEnqueued('project-reviews-coordinator', 'build/coordinator.js');
-        $this->assertStyleEnqueued('project-reviews-coordinator-styles', 'build/coordinator.css');
-        $this->assertPrAppDataLocalized('project-reviews-coordinator');
+        $this->assertScriptEnqueued('scorva-coordinator', 'build/coordinator.js');
+        $this->assertStyleEnqueued('scorva-coordinator-styles', 'build/coordinator.css');
+        $this->assertPrAppDataLocalized('scorva-coordinator');
     }
 
     public function test_handle_template_enqueues_reviewer_spa_assets(): void
@@ -209,9 +209,9 @@ final class RoutesTest extends TestCase
         Routes::handle_template();
         pr_test_run_wp_enqueue_scripts();
 
-        $this->assertScriptEnqueued('project-reviews-reviewer', 'build/reviewer.js');
-        $this->assertStyleEnqueued('project-reviews-reviewer-styles', 'build/reviewer.css');
-        $this->assertPrAppDataLocalized('project-reviews-reviewer');
+        $this->assertScriptEnqueued('scorva-reviewer', 'build/reviewer.js');
+        $this->assertStyleEnqueued('scorva-reviewer-styles', 'build/reviewer.css');
+        $this->assertPrAppDataLocalized('scorva-reviewer');
     }
 
     public function test_handle_template_does_not_enqueue_spa_scripts_when_query_var_empty(): void
@@ -236,7 +236,7 @@ final class RoutesTest extends TestCase
         $this->assertSame(home_url('/reviews/mark/'), $GLOBALS['pr_test_redirect_url']);
         $this->assertNull($GLOBALS['pr_test_template_included']);
         $this->assertFalse($GLOBALS['pr_test_workspace_denied']);
-        $this->assertFalse($this->isScriptHandleEnqueued('project-reviews-coordinator'));
+        $this->assertFalse($this->isScriptHandleEnqueued('scorva-coordinator'));
     }
 
     public function test_dual_access_logged_in_at_reviews_root_renders_coordinator(): void
@@ -251,8 +251,8 @@ final class RoutesTest extends TestCase
 
         $this->assertNull($GLOBALS['pr_test_redirect_url']);
         $this->assertSame('coordinator', $GLOBALS['pr_test_template_app']);
-        $this->assertTrue($this->isScriptHandleEnqueued('project-reviews-coordinator'));
-        $this->assertFalse($this->isScriptHandleEnqueued('project-reviews-landing'));
+        $this->assertTrue($this->isScriptHandleEnqueued('scorva-coordinator'));
+        $this->assertFalse($this->isScriptHandleEnqueued('scorva-landing'));
     }
 
     public function test_coordinator_only_logged_in_at_reviews_root_renders_coordinator(): void
@@ -267,7 +267,7 @@ final class RoutesTest extends TestCase
 
         $this->assertNull($GLOBALS['pr_test_redirect_url']);
         $this->assertSame('coordinator', $GLOBALS['pr_test_template_app']);
-        $this->assertTrue($this->isScriptHandleEnqueued('project-reviews-coordinator'));
+        $this->assertTrue($this->isScriptHandleEnqueued('scorva-coordinator'));
     }
 
     public function test_coordinator_user_can_load_coordinator_deep_route(): void
@@ -282,7 +282,7 @@ final class RoutesTest extends TestCase
 
         $this->assertNull($GLOBALS['pr_test_redirect_url']);
         $this->assertSame('coordinator', $GLOBALS['pr_test_template_app']);
-        $this->assertTrue($this->isScriptHandleEnqueued('project-reviews-coordinator'));
+        $this->assertTrue($this->isScriptHandleEnqueued('scorva-coordinator'));
     }
 
     public function test_reviewer_user_can_load_reviewer_route(): void
@@ -296,7 +296,7 @@ final class RoutesTest extends TestCase
 
         $this->assertNull($GLOBALS['pr_test_redirect_url']);
         $this->assertSame('reviewer', $GLOBALS['pr_test_template_app']);
-        $this->assertTrue($this->isScriptHandleEnqueued('project-reviews-reviewer'));
+        $this->assertTrue($this->isScriptHandleEnqueued('scorva-reviewer'));
     }
 
     public function test_pr_app_data_includes_login_logout_urls(): void
@@ -309,7 +309,7 @@ final class RoutesTest extends TestCase
         Routes::handle_template();
         pr_test_run_wp_enqueue_scripts();
 
-        $data = $this->getLocalizedPrAppData('project-reviews-reviewer');
+        $data = $this->getLocalizedPrAppData('scorva-reviewer');
         $this->assertNotEmpty($data['loginUrl'] ?? '');
         $this->assertNotEmpty($data['logoutUrl'] ?? '');
         $this->assertSame(home_url('/reviews/mark/'), $data['appHomeUrl'] ?? '');
@@ -353,7 +353,7 @@ final class RoutesTest extends TestCase
         Routes::handle_template();
         pr_test_run_wp_enqueue_scripts();
 
-        $data = $this->getLocalizedPrAppData('project-reviews-landing');
+        $data = $this->getLocalizedPrAppData('scorva-landing');
         $this->assertNotEmpty($data['loginUrl'] ?? '');
         $this->assertSame(home_url('/reviews/'), $data['appHomeUrl'] ?? '');
         $this->assertSame(
@@ -411,7 +411,7 @@ final class RoutesTest extends TestCase
         }
 
         $this->assertNotNull($match);
-        $this->assertStringContainsString('project-reviews/v1/', (string) ($match['data']['restUrl'] ?? ''));
+        $this->assertStringContainsString('scorva/v1/', (string) ($match['data']['restUrl'] ?? ''));
         $this->assertNotEmpty($match['data']['nonce'] ?? '');
         $this->assertSame(
             \ProjectReviews\Services\PluginSettings::DEFAULT_APP_DISPLAY_NAME,
@@ -475,11 +475,11 @@ final class RoutesTest extends TestCase
     private function assertAppShellStyleEnqueued(): void
     {
         $handles = array_column($GLOBALS['pr_test_enqueued_styles'], 'handle');
-        $this->assertContains('project-reviews-app-shell', $handles);
+        $this->assertContains('scorva-app-shell', $handles);
 
         $match = null;
         foreach ($GLOBALS['pr_test_enqueued_styles'] as $style) {
-            if ($style['handle'] === 'project-reviews-app-shell') {
+            if ($style['handle'] === 'scorva-app-shell') {
                 $match = $style;
                 break;
             }

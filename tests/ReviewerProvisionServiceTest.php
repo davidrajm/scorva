@@ -28,52 +28,63 @@ final class ReviewerProvisionServiceTest extends TestCase
         add_role(Capabilities::ROLE_REVIEWER, 'Reviewer');
     }
 
-    public function test_provision_creates_user_and_session_reviewer_row(): void
+    public function test_generate_reviewer_credentials_sends_email_and_sets_token(): void
     {
         $sessions = new SessionRepository($this->wpdb);
         $panels = new PanelRepository($this->wpdb);
 
-        $session_id = $sessions->create(['title' => 'Provision test']);
+        $session_id = $sessions->create(['title' => 'Credentials test']);
         $panel_id = $panels->create($session_id, 'Panel A');
         $reviewer_id = $panels->add_reviewer($panel_id, [
-            'email' => 'new@example.com',
-            'name' => 'New Reviewer',
+            'email' => 'rev@example.com',
+            'name' => 'Rev Reviewer',
             'weight' => 1,
         ]);
 
         $service = new ReviewerProvisionService($sessions, $panels);
-        $result = $service->provision_reviewer($session_id, $reviewer_id);
+        $result = $service->generate_reviewer_credentials($session_id, $reviewer_id);
 
         $this->assertIsArray($result);
-        $this->assertTrue($result['created']);
+        $this->assertTrue($result['token_created']);
         $this->assertTrue($result['email_sent']);
-        $this->assertGreaterThan(0, $result['user_id']);
         $this->assertNotEmpty($result['password']);
+        $this->assertNotEmpty($result['token']);
         $this->assertCount(1, $GLOBALS['pr_test_sent_mail']);
 
         $updated = $panels->find_reviewer($reviewer_id);
-        $this->assertSame($result['user_id'], (int) ($updated['user_id'] ?? 0));
+        $this->assertSame($reviewer_id, (int) ($updated['user_id'] ?? 0));
+        $this->assertNotEmpty($updated['token'] ?? '');
     }
 
-    public function test_link_existing_user_without_duplicate_account(): void
+    public function test_send_all_reviewer_credentials_skips_already_sent(): void
     {
         $sessions = new SessionRepository($this->wpdb);
         $panels = new PanelRepository($this->wpdb);
 
-        $session_id = $sessions->create(['title' => 'Link test']);
-        $panel_id = $panels->create($session_id, 'Panel B');
-        $reviewer_id = $panels->add_reviewer($panel_id, [
-            'email' => '',
-            'name' => 'Linked Reviewer',
-        ]);
+        $session_id = $sessions->create(['title' => 'Bulk send test']);
+        $panel_id = $panels->create($session_id, 'Panel A');
 
-        $existing_id = wp_create_user('existing', 'secret', 'existing@example.com');
-        $this->assertIsInt($existing_id);
+        $r1 = $panels->add_reviewer($panel_id, ['email' => 'one@example.com', 'name' => 'One']);
+        $r2 = $panels->add_reviewer($panel_id, ['email' => 'two@example.com', 'name' => 'Two']);
+        $panels->update_reviewer($r2, ['credentials_sent_at' => '2026-01-01 00:00:00']);
 
         $service = new ReviewerProvisionService($sessions, $panels);
-        $result = $service->link_existing_user($session_id, $reviewer_id, (int) $existing_id);
+        $result = $service->send_all_reviewer_credentials($session_id);
 
-        $this->assertTrue($result['linked']);
-        $this->assertSame((int) $existing_id, $result['user_id']);
+        $this->assertSame(1, $result['sent']);
+        $this->assertSame(1, $result['skipped']);
+    }
+
+    public function test_provision_reviewer_account_creates_wp_user(): void
+    {
+        $service = new ReviewerProvisionService();
+        $result = $service->provision_reviewer_account('faculty@example.com', 'Faculty Member', 'EMP001');
+
+        $this->assertIsArray($result);
+        $this->assertTrue($result['created']);
+        $this->assertGreaterThan(0, $result['user_id']);
+
+        $user = get_user_by('email', 'faculty@example.com');
+        $this->assertNotFalse($user);
     }
 }

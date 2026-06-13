@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ProjectReviews\Services;
 
 use ProjectReviews\Capabilities;
-use ProjectReviews\Emails\ReviewerInviteEmail;
+use ProjectReviews\Emails\ReviewerCredentialsEmail;
 use ProjectReviews\Repositories\PanelRepository;
 use ProjectReviews\Repositories\ReviewAssignmentRepository;
 use ProjectReviews\Repositories\SessionRepository;
@@ -29,28 +29,24 @@ final class ReviewerProvisionService
     }
 
     /**
+     * Create or update a WordPress account for the faculty directory.
+     * Panel reviewers never get WordPress accounts; this only backs the
+     * faculty accounts page (CSV import and directory sync).
+     *
      * @param array{designation?: string, gender?: string} $meta
-     * @return array{
-     *     user_id: int,
-     *     created: bool,
-     *     email_sent: bool,
-     *     password?: string
-     * }|\WP_Error
+     * @return array{user_id: int, created: bool}|\WP_Error
      */
     public function provision_reviewer_account(
         string $email,
         string $name,
         ?string $emp_id = null,
-        bool $send_email = false,
-        ?string $session_title = null,
-        ?string $login_url = null,
         array $meta = []
     ): array|\WP_Error {
         $email = strtolower(trim($email));
         if ($email === '') {
             return new \WP_Error(
                 'pr_reviewer_missing_email',
-                __('Email is required.', 'project-reviews'),
+                __('Email is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -61,8 +57,6 @@ final class ReviewerProvisionService
         }
 
         $user_id = $user_result['user_id'];
-        $created = $user_result['created'];
-        $password = $user_result['password'];
 
         if ($emp_id !== null && $emp_id !== '' && function_exists('update_user_meta')) {
             update_user_meta($user_id, 'pr_faculty_emp_id', trim($emp_id));
@@ -78,236 +72,324 @@ final class ReviewerProvisionService
             update_user_meta($user_id, 'pr_faculty_gender', $gender);
         }
 
-        $email_sent = false;
-        if ($send_email && $password !== '') {
-            $login = $login_url ?? PluginSettings::login_url_with_redirect(home_url('/reviews/mark/'));
-            $email_sent = ReviewerInviteEmail::send(
-                $email,
-                $name,
-                $password,
-                $login,
-                $session_title ?? ''
+        return [
+            'user_id' => $user_id,
+            'created' => $user_result['created'],
+        ];
+    }
+
+    /**
+     * Generate (or refresh) token-portal credentials for one panel reviewer.
+     * The token is created once and kept stable; the password is regenerated
+     * on every call. Pass $send_email = false to generate without emailing
+     * (coordinator regenerate flow — they see and optionally forward creds).
+     *
+     * @return array{
+     *     reviewer_id: int,
+     *     token_created: bool,
+     *     email_sent: bool,
+     *     send_failed: bool,
+     *     credentials_sent_at: string|null,
+     *     portal_url: string,
+     *     portal_password: string,
+     *     password?: string,
+     *     token?: string
+     * }|\WP_Error
+     */
+    public function generate_reviewer_credentials(
+        int $session_id,
+        int $reviewer_id,
+        string $audit_action = 'generate_reviewer_credentials',
+        bool $send_email = true
+    ): array|\WP_Error {
+        $session = $this->sessions->find_by_id($session_id);
+        if ($session === null) {
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
+        }
+
+        $reviewer = $this->panels->find_reviewer($reviewer_id);
+        if ($reviewer === null) {
+            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found.', 'scorva'), ['status' => 404]);
+        }
+
+        $panel = $this->panels->find_by_id((int) $reviewer['panel_id']);
+        if ($panel === null || (int) $panel['session_id'] !== $session_id) {
+            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found in this project.', 'scorva'), ['status' => 404]);
+        }
+
+        $email = strtolower(trim((string) ($reviewer['email'] ?? '')));
+        if ($email === '' && $send_email) {
+            return new \WP_Error(
+                'pr_reviewer_missing_email',
+                __('Email is required before sending credentials.', 'scorva'),
+                ['status' => 400]
             );
         }
 
+        $tokens = new TokenService();
+        $token = trim((string) ($reviewer['token'] ?? ''));
+        $token_created = false;
+        if (!$tokens->is_valid_token_format($token)) {
+            $token = $tokens->generate_token();
+            $token_created = true;
+        }
+
+        $password = $tokens->generate_password();
+        $portal_url = PluginSettings::portal_url_with_token($token);
+
+        $email_sent = false;
+        if ($send_email && $email !== '') {
+            $email_sent = ReviewerCredentialsEmail::send(
+                $email,
+                trim((string) ($reviewer['name'] ?? '')),
+                $password,
+                $portal_url,
+                (string) ($session['title'] ?? '')
+            );
+        }
+
+        $sent_at = null;
+        if ($email_sent) {
+            $sent_at = function_exists('current_time')
+                ? (string) current_time('mysql')
+                : gmdate('Y-m-d H:i:s');
+        }
+
+        $update = [
+            'token' => $token,
+            'password_hash' => $tokens->hash_password($password),
+            'password_encrypted' => $tokens->encrypt_password($password),
+        ];
+        if ($sent_at !== null) {
+            $update['credentials_sent_at'] = $sent_at;
+        }
+
+        // Token reviewers have no WordPress account. The marking pipeline
+        // (assignments, marks, weights, scores) keys on a numeric reviewer
+        // identity in the user_id columns, so the roster row id doubles as
+        // that identity.
+        $needs_identity = (int) ($reviewer['user_id'] ?? 0) <= 0;
+        if ($needs_identity) {
+            $update['user_id'] = $reviewer_id;
+        }
+
+        $this->panels->update_reviewer($reviewer_id, $update);
+
+        if ($needs_identity) {
+            (new ReviewAssignmentRepository())->sync_panel_reviewers_to_all_reviews($session_id);
+        }
+
+        $this->audit->log(
+            $audit_action,
+            'session',
+            $session_id,
+            null,
+            json_encode(
+                ['reviewer_id' => $reviewer_id, 'email_sent' => $email_sent],
+                JSON_THROW_ON_ERROR
+            )
+        );
+
         $response = [
-            'user_id' => $user_id,
-            'created' => $created,
+            'reviewer_id' => $reviewer_id,
+            'token_created' => $token_created,
             'email_sent' => $email_sent,
+            'send_failed' => $send_email && $email !== '' && !$email_sent,
+            'credentials_sent_at' => $sent_at ?? ((string) ($reviewer['credentials_sent_at'] ?? '') ?: null),
+            'portal_url' => $portal_url,
+            'portal_password' => $password,
         ];
 
-        if (defined('PR_UNIT_TEST') && PR_UNIT_TEST && $password !== '') {
+        if (defined('PR_UNIT_TEST') && PR_UNIT_TEST) {
             $response['password'] = $password;
+            $response['token'] = $token;
         }
 
         return $response;
     }
 
     /**
-     * @return array{
-     *     user_id: int,
-     *     provisioned: bool,
-     *     created: bool,
-     *     email_sent: bool,
-     *     password?: string
-     * }|\WP_Error
+     * Re-send the existing portal credentials (current token URL + stored
+     * password) without regenerating. Use this when the coordinator wants
+     * to resend without invalidating an existing session.
+     *
+     * @return array{email_sent: bool, send_failed: bool, credentials_sent_at: string|null}|\WP_Error
      */
-    public function provision_reviewer(int $session_id, int $reviewer_id): array|\WP_Error
+    public function resend_current_credentials(int $session_id, int $reviewer_id): array|\WP_Error
     {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $reviewer = $this->panels->find_reviewer($reviewer_id);
         if ($reviewer === null) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found.', 'scorva'), ['status' => 404]);
         }
 
         $panel = $this->panels->find_by_id((int) $reviewer['panel_id']);
         if ($panel === null || (int) $panel['session_id'] !== $session_id) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found in this project.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found in this project.', 'scorva'), ['status' => 404]);
         }
 
         $email = strtolower(trim((string) ($reviewer['email'] ?? '')));
         if ($email === '') {
             return new \WP_Error(
                 'pr_reviewer_missing_email',
-                __('Email is required before provisioning.', 'project-reviews'),
+                __('Email is required before sending credentials.', 'scorva'),
                 ['status' => 400]
             );
         }
 
-        $name = trim((string) ($reviewer['name'] ?? ''));
-        $user_result = $this->resolve_or_create_user($email, $name);
-        if ($user_result instanceof \WP_Error) {
-            return $user_result;
+        $token = trim((string) ($reviewer['token'] ?? ''));
+        $encrypted = trim((string) ($reviewer['password_encrypted'] ?? ''));
+        if ($token === '' || $encrypted === '') {
+            return new \WP_Error(
+                'pr_no_credentials',
+                __('No credentials have been generated for this reviewer. Use "Send credentials" first.', 'scorva'),
+                ['status' => 400]
+            );
         }
 
-        $user_id = $user_result['user_id'];
-        $created = $user_result['created'];
-        $password = $user_result['password'];
-        if ($password === '' && $created) {
-            $password = function_exists('wp_generate_password')
-                ? wp_generate_password(16, true, true)
-                : bin2hex(random_bytes(8));
+        $password = (new TokenService())->decrypt_password($encrypted);
+        if ($password === '') {
+            return new \WP_Error(
+                'pr_credentials_unreadable',
+                __('Could not read stored credentials. Regenerate credentials for this reviewer.', 'scorva'),
+                ['status' => 500]
+            );
         }
 
-        $login_url = PluginSettings::login_url_with_redirect(home_url('/reviews/'));
-        $email_sent = ReviewerInviteEmail::send(
+        $portal_url = PluginSettings::portal_url_with_token($token);
+        $email_sent = ReviewerCredentialsEmail::send(
             $email,
-            $name,
+            trim((string) ($reviewer['name'] ?? '')),
             $password,
-            $login_url,
+            $portal_url,
             (string) ($session['title'] ?? '')
         );
 
-        $this->panels->update_reviewer($reviewer_id, ['user_id' => $user_id]);
-        $session_provisioned = $this->ensure_session_reviewer($session_id, $user_id, true);
-        (new ReviewAssignmentRepository())->sync_panel_reviewers_to_all_reviews($session_id);
+        $sent_at = null;
+        if ($email_sent) {
+            $sent_at = function_exists('current_time')
+                ? (string) current_time('mysql')
+                : gmdate('Y-m-d H:i:s');
+            $this->panels->update_reviewer($reviewer_id, ['credentials_sent_at' => $sent_at]);
+        }
 
         $this->audit->log(
-            'provision_reviewer',
+            'resend_reviewer_credentials',
             'session',
             $session_id,
             null,
-            json_encode(['reviewer_id' => $reviewer_id, 'user_id' => $user_id], JSON_THROW_ON_ERROR)
+            json_encode(
+                ['reviewer_id' => $reviewer_id, 'email_sent' => $email_sent],
+                JSON_THROW_ON_ERROR
+            )
         );
 
-        $response = [
-            'user_id' => $user_id,
-            'provisioned' => $session_provisioned,
-            'created' => $created,
+        return [
             'email_sent' => $email_sent,
+            'send_failed' => !$email_sent,
+            'credentials_sent_at' => $sent_at ?? ((string) ($reviewer['credentials_sent_at'] ?? '') ?: null),
         ];
-
-        if (defined('PR_UNIT_TEST') && PR_UNIT_TEST && $password !== '') {
-            $response['password'] = $password;
-        }
-
-        return $response;
     }
 
     /**
+     * @deprecated Use resend_current_credentials() for re-sending without
+     *             regenerating, or generate_reviewer_credentials() directly.
+     */
+    public function resend_reviewer_credentials(int $session_id, int $reviewer_id): array|\WP_Error
+    {
+        return $this->generate_reviewer_credentials($session_id, $reviewer_id, 'resend_reviewer_credentials');
+    }
+
+    /**
+     * Send portal credentials to every panel reviewer in the session.
+     * Reviewers who already received credentials are skipped unless $force.
+     *
      * @return array{
      *     sent: int,
      *     skipped: int,
      *     failed: int,
+     *     failed_emails: list<string>,
      *     details: list<array<string, mixed>>
      * }|\WP_Error
      */
-    public function invite_all_session_reviewers(int $session_id): array|\WP_Error
+    public function send_all_reviewer_credentials(int $session_id, bool $force = false): array|\WP_Error
     {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
-        }
-
-        $login_url = PluginSettings::login_url_with_redirect(home_url('/reviews/mark/'));
-        $session_title = (string) ($session['title'] ?? '');
-
-        $by_email = [];
-        foreach ($this->panels->list_reviewers_for_session($session_id) as $reviewer) {
-            $email = strtolower(trim((string) ($reviewer['email'] ?? '')));
-            if ($email === '') {
-                continue;
-            }
-
-            if (!isset($by_email[$email])) {
-                $by_email[$email] = $reviewer;
-            }
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $sent = 0;
         $skipped = 0;
         $failed = 0;
+        $failed_emails = [];
         $details = [];
 
-        foreach ($by_email as $email => $reviewer) {
-            $name = trim((string) ($reviewer['name'] ?? ''));
-            $account = $this->provision_reviewer_account($email, $name, null, false);
-            if ($account instanceof \WP_Error) {
-                $failed++;
-                $details[] = [
-                    'email' => $email,
-                    'status' => 'failed',
-                    'message' => $account->get_error_message(),
-                ];
-                continue;
-            }
+        foreach ($this->panels->list_reviewers_for_session($session_id) as $reviewer) {
+            $reviewer_id = (int) ($reviewer['id'] ?? 0);
+            $email = strtolower(trim((string) ($reviewer['email'] ?? '')));
 
-            $user_id = (int) $account['user_id'];
-            $created = (bool) ($account['created'] ?? false);
-            $this->link_roster_emails_to_user($session_id, $email, $user_id);
-
-            if (Capabilities::user_has_coordinator_workspace_access_for_user($user_id)) {
-                $this->ensure_session_reviewer($session_id, $user_id, false);
-                $email_sent = ReviewerInviteEmail::send_login_reminder(
-                    $email,
-                    $name,
-                    $login_url,
-                    $session_title
-                );
+            if ($email === '') {
                 $skipped++;
                 $details[] = [
+                    'reviewer_id' => $reviewer_id,
+                    'status' => 'skipped',
+                    'reason' => 'missing_email',
+                ];
+                continue;
+            }
+
+            $already_sent = trim((string) ($reviewer['credentials_sent_at'] ?? '')) !== '';
+            if ($already_sent && !$force) {
+                $skipped++;
+                $details[] = [
+                    'reviewer_id' => $reviewer_id,
                     'email' => $email,
                     'status' => 'skipped',
-                    'reason' => 'coordinator',
-                    'email_sent' => $email_sent,
+                    'reason' => 'already_sent',
                 ];
                 continue;
             }
 
-            $already_provisioned = $this->is_provisioned_for_session($session_id, $user_id);
-            $send_credentials = $created || $already_provisioned;
-
-            if ($send_credentials) {
-                $password = function_exists('wp_generate_password')
-                    ? wp_generate_password(16, true, true)
-                    : bin2hex(random_bytes(8));
-
-                if (function_exists('wp_set_password')) {
-                    wp_set_password($password, $user_id);
-                }
-
-                $this->ensure_session_reviewer($session_id, $user_id, true);
-                $email_sent = ReviewerInviteEmail::send(
-                    $email,
-                    $name,
-                    $password,
-                    $login_url,
-                    $session_title
-                );
-                $sent++;
+            $result = $this->generate_reviewer_credentials($session_id, $reviewer_id, 'bulk_send_reviewer_credentials');
+            if ($result instanceof \WP_Error) {
+                $failed++;
+                $failed_emails[] = $email;
                 $details[] = [
+                    'reviewer_id' => $reviewer_id,
                     'email' => $email,
-                    'status' => 'sent',
-                    'type' => 'credentials',
-                    'email_sent' => $email_sent,
+                    'status' => 'failed',
+                    'message' => $result->get_error_message(),
                 ];
                 continue;
             }
 
-            $this->ensure_session_reviewer($session_id, $user_id, false);
-            $email_sent = ReviewerInviteEmail::send_login_reminder(
-                $email,
-                $name,
-                $login_url,
-                $session_title
-            );
+            if (!($result['email_sent'] ?? false)) {
+                $failed++;
+                $failed_emails[] = $email;
+                $details[] = [
+                    'reviewer_id' => $reviewer_id,
+                    'email' => $email,
+                    'status' => 'failed',
+                    'message' => __('Email could not be sent.', 'scorva'),
+                ];
+                continue;
+            }
+
             $sent++;
             $details[] = [
+                'reviewer_id' => $reviewer_id,
                 'email' => $email,
                 'status' => 'sent',
-                'type' => 'reminder',
-                'email_sent' => $email_sent,
             ];
         }
 
-        (new ReviewAssignmentRepository())->sync_panel_reviewers_to_all_reviews($session_id);
-
         $this->audit->log(
-            'bulk_invite_reviewers',
+            'bulk_send_reviewer_credentials',
             'session',
             $session_id,
             null,
@@ -321,147 +403,20 @@ final class ReviewerProvisionService
             'sent' => $sent,
             'skipped' => $skipped,
             'failed' => $failed,
+            'failed_emails' => $failed_emails,
             'details' => $details,
         ];
     }
 
     /**
-     * @return array{resent: true, email_sent: bool}|\WP_Error
-     */
-    public function resend_credentials(int $session_id, int $reviewer_id): array|\WP_Error
-    {
-        $reviewer = $this->panels->find_reviewer($reviewer_id);
-        if ($reviewer === null) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found.', 'project-reviews'), ['status' => 404]);
-        }
-
-        $panel = $this->panels->find_by_id((int) $reviewer['panel_id']);
-        if ($panel === null || (int) $panel['session_id'] !== $session_id) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found in this project.', 'project-reviews'), ['status' => 404]);
-        }
-
-        $user_id = (int) ($reviewer['user_id'] ?? 0);
-        if ($user_id <= 0) {
-            $provisioned = $this->provision_reviewer($session_id, $reviewer_id);
-            if ($provisioned instanceof \WP_Error) {
-                return $provisioned;
-            }
-
-            return ['resent' => true, 'email_sent' => (bool) ($provisioned['email_sent'] ?? false)];
-        }
-
-        $email = strtolower(trim((string) ($reviewer['email'] ?? '')));
-        if ($email === '') {
-            return new \WP_Error(
-                'pr_reviewer_missing_email',
-                __('Email is required to resend credentials.', 'project-reviews'),
-                ['status' => 400]
-            );
-        }
-
-        if (! $this->is_provisioned_for_session($session_id, $user_id)) {
-            return new \WP_Error(
-                'pr_resend_not_provisioned',
-                __('Credentials can only be resent for accounts provisioned by this plugin.', 'project-reviews'),
-                ['status' => 400]
-            );
-        }
-
-        $password = function_exists('wp_generate_password')
-            ? wp_generate_password(16, true, true)
-            : bin2hex(random_bytes(8));
-
-        if (function_exists('wp_set_password')) {
-            wp_set_password($password, $user_id);
-        }
-
-        $session = $this->sessions->find_by_id($session_id);
-        $login_url = PluginSettings::login_url_with_redirect(home_url('/reviews/'));
-        $email_sent = ReviewerInviteEmail::send(
-            $email,
-            (string) ($reviewer['name'] ?? ''),
-            $password,
-            $login_url,
-            (string) ($session['title'] ?? '')
-        );
-
-        $this->audit->log(
-            'resend_credentials',
-            'session',
-            $session_id,
-            null,
-            json_encode(['reviewer_id' => $reviewer_id, 'user_id' => $user_id], JSON_THROW_ON_ERROR)
-        );
-
-        return ['resent' => true, 'email_sent' => $email_sent];
-    }
-
-    /**
-     * @return array{user_id: int, linked: true}|\WP_Error
-     */
-    public function link_existing_user(int $session_id, int $reviewer_id, int $user_id): array|\WP_Error
-    {
-        $reviewer = $this->panels->find_reviewer($reviewer_id);
-        if ($reviewer === null) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found.', 'project-reviews'), ['status' => 404]);
-        }
-
-        $panel = $this->panels->find_by_id((int) $reviewer['panel_id']);
-        if ($panel === null || (int) $panel['session_id'] !== $session_id) {
-            return new \WP_Error('pr_reviewer_not_found', __('Reviewer not found in this project.', 'project-reviews'), ['status' => 404]);
-        }
-
-        if ($user_id <= 0 || !function_exists('get_user_by') || get_user_by('id', $user_id) === null) {
-            return new \WP_Error(
-                'pr_invalid_user',
-                __('WordPress user not found.', 'project-reviews'),
-                ['status' => 404]
-            );
-        }
-
-        $this->panels->update_reviewer($reviewer_id, ['user_id' => $user_id]);
-        $this->ensure_session_reviewer($session_id, $user_id, false);
-        (new ReviewAssignmentRepository())->sync_panel_reviewers_to_all_reviews($session_id);
-
-        $this->audit->log(
-            'link_reviewer',
-            'session',
-            $session_id,
-            null,
-            json_encode(['reviewer_id' => $reviewer_id, 'user_id' => $user_id], JSON_THROW_ON_ERROR)
-        );
-
-        return ['user_id' => $user_id, 'linked' => true];
-    }
-
-    private function link_roster_emails_to_user(int $session_id, string $email, int $user_id): void
-    {
-        foreach ($this->panels->list_reviewers_for_session($session_id) as $reviewer) {
-            $row_email = strtolower(trim((string) ($reviewer['email'] ?? '')));
-            if ($row_email !== $email) {
-                continue;
-            }
-
-            $reviewer_id = (int) ($reviewer['id'] ?? 0);
-            if ($reviewer_id <= 0) {
-                continue;
-            }
-
-            if ((int) ($reviewer['user_id'] ?? 0) !== $user_id) {
-                $this->panels->update_reviewer($reviewer_id, ['user_id' => $user_id]);
-            }
-        }
-    }
-
-    /**
-     * @return array{user_id: int, created: bool, password: string}|\WP_Error
+     * @return array{user_id: int, created: bool}|\WP_Error
      */
     private function resolve_or_create_user(string $email, string $display_name): array|\WP_Error
     {
         if (!function_exists('get_user_by')) {
             return new \WP_Error(
                 'pr_provision_unavailable',
-                __('User provisioning is not available.', 'project-reviews'),
+                __('User provisioning is not available.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -477,14 +432,13 @@ final class ReviewerProvisionService
             return [
                 'user_id' => $user_id,
                 'created' => false,
-                'password' => '',
             ];
         }
 
         if (!function_exists('wp_create_user') || !function_exists('wp_generate_password')) {
             return new \WP_Error(
                 'pr_provision_unavailable',
-                __('User provisioning is not available.', 'project-reviews'),
+                __('User provisioning is not available.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -514,7 +468,7 @@ final class ReviewerProvisionService
         if ($user_id <= 0) {
             return new \WP_Error(
                 'pr_provision_failed',
-                __('Could not create reviewer account.', 'project-reviews'),
+                __('Could not create reviewer account.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -532,7 +486,6 @@ final class ReviewerProvisionService
         return [
             'user_id' => $user_id,
             'created' => true,
-            'password' => $password,
         ];
     }
 
@@ -556,70 +509,5 @@ final class ReviewerProvisionService
         if (function_exists('get_role') && get_role(Capabilities::ROLE_REVIEWER) !== null) {
             $user->add_role(Capabilities::ROLE_REVIEWER);
         }
-    }
-
-    private function is_provisioned_for_session(int $session_id, int $user_id): bool
-    {
-        global $wpdb;
-        if (!isset($wpdb)) {
-            return false;
-        }
-
-        $table = $wpdb->prefix . 'pr_session_reviewers';
-        $row = $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT provisioned_for_session FROM {$table} WHERE session_id = %d AND user_id = %d",
-                $session_id,
-                $user_id
-            ),
-            'ARRAY_A'
-        );
-
-        return is_array($row) && (int) ($row['provisioned_for_session'] ?? 0) === 1;
-    }
-
-    private function ensure_session_reviewer(int $session_id, int $user_id, bool $provisioned): bool
-    {
-        global $wpdb;
-        if (!isset($wpdb)) {
-            return false;
-        }
-
-        $table = $wpdb->prefix . 'pr_session_reviewers';
-        $existing = $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT id, provisioned_for_session FROM {$table} WHERE session_id = %d AND user_id = %d",
-                $session_id,
-                $user_id
-            ),
-            'ARRAY_A'
-        );
-
-        if (is_array($existing)) {
-            if ($provisioned && (int) ($existing['provisioned_for_session'] ?? 0) !== 1) {
-                $wpdb->update(
-                    $table,
-                    ['provisioned_for_session' => 1],
-                    ['id' => (int) $existing['id']],
-                    ['%d'],
-                    ['%d']
-                );
-            }
-
-            return false;
-        }
-
-        $wpdb->insert(
-            $table,
-            [
-                'session_id' => $session_id,
-                'user_id' => $user_id,
-                'provisioned_for_session' => $provisioned ? 1 : 0,
-                'disabled_at' => null,
-            ],
-            ['%d', '%d', '%d', '%s']
-        );
-
-        return true;
     }
 }

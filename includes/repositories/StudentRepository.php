@@ -227,7 +227,7 @@ final class StudentRepository
         if ($reg_no === '') {
             return new \WP_Error(
                 'pr_invalid_student',
-                __('Registration number is required.', 'project-reviews'),
+                __('Registration number is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -241,7 +241,7 @@ final class StudentRepository
             if ($name === '') {
                 return new \WP_Error(
                     'pr_name_required',
-                    __('Name is required for new students.', 'project-reviews'),
+                    __('Name is required for new students.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -256,7 +256,7 @@ final class StudentRepository
             if ($student === null) {
                 return new \WP_Error(
                     'pr_student_create_failed',
-                    __('Could not create student.', 'project-reviews'),
+                    __('Could not create student.', 'scorva'),
                     ['status' => 500]
                 );
             }

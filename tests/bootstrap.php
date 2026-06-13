@@ -216,7 +216,7 @@ if (!function_exists('pr_test_run_wp_enqueue_scripts')) {
 if (!function_exists('plugins_url')) {
     function plugins_url(string $path = '', $plugin = ''): string
     {
-        return 'https://example.test/wp-content/plugins/project-reviews/' . ltrim($path, '/');
+        return 'https://example.test/wp-content/plugins/scorva/' . ltrim($path, '/');
     }
 }
 
@@ -1384,6 +1384,13 @@ if (!function_exists('check_admin_referer')) {
     function check_admin_referer(string $action = '-1', string $query_arg = '_wpnonce'): void
     {
         unset($action, $query_arg);
+    }
+}
+
+if (!function_exists('is_email')) {
+    function is_email(string $email): string|false
+    {
+        return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : false;
     }
 }
 

@@ -37,7 +37,7 @@ final class HealthEndpointTest extends TestCase
 
         global $pr_test_registered_routes;
         $health = $this->find_route('/health');
-        $this->assertSame('project-reviews/v1', $health['namespace']);
+        $this->assertSame('scorva/v1', $health['namespace']);
         $this->assertSame('/health', $health['route']);
         $this->assertSame('GET', $health['args']['methods']);
     }

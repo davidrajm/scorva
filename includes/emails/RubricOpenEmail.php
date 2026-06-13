@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ProjectReviews\Emails;
 
 use ProjectReviews\Services\PluginSettings;
+use ProjectReviews\Services\SmtpService;
 
 final class RubricOpenEmail
 {
@@ -23,7 +24,7 @@ final class RubricOpenEmail
         $brand = PluginSettings::app_short_name();
         $subject = sprintf(
             /* translators: 1: product short name, 2: review or session label */
-            __('%1$s: Rubric confirmed — %2$s', 'project-reviews'),
+            __('%1$s: Rubric confirmed — %2$s', 'scorva'),
             $brand,
             $review_label !== '' ? $review_label : $session_title
         );
@@ -31,7 +32,7 @@ final class RubricOpenEmail
         $message = self::wrap(
             '<p>' . esc_html__(
                 'A rubric has been confirmed and marking is now open for reviewers.',
-                'project-reviews'
+                'scorva'
             ) . '</p>'
             . '<p><strong>' . esc_html($session_title) . '</strong> — '
             . esc_html($review_label) . '</p>'
@@ -39,7 +40,7 @@ final class RubricOpenEmail
             . esc_html(
                 sprintf(
                     /* translators: %s: application display name */
-                    __('Sign in to %s', 'project-reviews'),
+                    __('Sign in to %s', 'scorva'),
                     PluginSettings::app_display_name()
                 )
             ) . '</a></p>'
@@ -67,11 +68,12 @@ final class RubricOpenEmail
             ['From: ' . PluginSettings::from_name() . ' <wordpress@' . (string) ($_SERVER['HTTP_HOST'] ?? 'localhost') . '>']
         );
 
+        $smtp = new SmtpService();
         $users = get_users(['role' => 'administrator', 'number' => 50]);
         foreach ($users as $user) {
             $email = (string) ($user->user_email ?? '');
             if ($email !== '') {
-                wp_mail($email, $subject, $message, $headers);
+                $smtp->send_mail($email, $subject, $message, $headers);
             }
         }
     }

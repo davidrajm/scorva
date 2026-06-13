@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ProjectReviews;
 
 use ProjectReviews\Services\PluginSettings;
+use ProjectReviews\Services\SmtpService;
 
 final class Routes
 {
@@ -49,8 +50,9 @@ final class Routes
 
         if (!is_user_logged_in()) {
             if ($app === 'reviewer') {
-                wp_safe_redirect(home_url('/reviews/'));
-                self::end_request();
+                // Token-portal reviewers have no WordPress account; the
+                // reviewer app handles token + password login client-side.
+                self::render_reviewer_shell();
 
                 return;
             }
@@ -92,7 +94,7 @@ final class Routes
     {
         add_action('wp_enqueue_scripts', static function () use ($app): void {
             wp_enqueue_style(
-                'project-reviews-app-shell',
+                'scorva-app-shell',
                 plugins_url('assets/css/app-shell.css', PR_PLUGIN_FILE),
                 [],
                 PR_PLUGIN_VERSION
@@ -108,13 +110,13 @@ final class Routes
                 ? require $asset_path
                 : ['dependencies' => [], 'version' => PR_PLUGIN_VERSION];
 
-            $handle = 'project-reviews-' . $app;
+            $handle = 'scorva-' . $app;
             $style_handle = $handle . '-styles';
 
             wp_enqueue_style(
                 $style_handle,
                 plugins_url('build/' . $app . '.css', PR_PLUGIN_FILE),
-                ['project-reviews-app-shell'],
+                ['scorva-app-shell'],
                 $asset['version'] ?? PR_PLUGIN_VERSION
             );
 
@@ -137,7 +139,20 @@ final class Routes
                 ? home_url('/reviews/mark/')
                 : home_url('/reviews/');
 
+            $portal_token = '';
+            if ($app === 'reviewer' && isset($_GET['token'])) {
+                $raw_token = function_exists('wp_unslash')
+                    ? (string) wp_unslash((string) $_GET['token'])
+                    : (string) $_GET['token'];
+                $raw_token = trim($raw_token);
+                if (preg_match('/^[a-f0-9]{64}$/i', $raw_token) === 1) {
+                    $portal_token = $raw_token;
+                }
+            }
+
             $pr_app_data = [
+                'portalToken' => $portal_token,
+                'isWpUser' => is_user_logged_in(),
                 'restUrl' => rest_url(Rest_Bootstrap::NAMESPACE . '/'),
                 'nonce' => wp_create_nonce('wp_rest'),
                 'studentImportTemplateUrl' => plugins_url(
@@ -167,6 +182,7 @@ final class Routes
                 'canAccessMarking' => current_user_can(PR_CAP_ENTER_MARKS),
                 'canCloseProject' => current_user_can(PR_CAP_CLOSE_SESSION),
                 'canManageProjects' => current_user_can(PR_CAP_MANAGE_SESSIONS),
+                'smtpConfigured' => (new SmtpService())->is_configured(),
             ];
 
             if (is_user_logged_in()) {
@@ -399,8 +415,8 @@ final class Routes
 
         status_header(403);
         wp_die(
-            esc_html__('You do not have permission to access this page.', 'project-reviews'),
-            esc_html__('Forbidden', 'project-reviews'),
+            esc_html__('You do not have permission to access this page.', 'scorva'),
+            esc_html__('Forbidden', 'scorva'),
             ['response' => 403]
         );
     }

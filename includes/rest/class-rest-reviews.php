@@ -229,7 +229,7 @@ final class Rest_Reviews
             if ($repository->is_coordinator_marks_locked($review_id)) {
                 return new \WP_Error(
                     'coordinator_marks_locked',
-                    __('Review marks are frozen. Unlock on Reports before changing marking status.', 'project-reviews'),
+                    __('Review marks are frozen. Unlock on Reports before changing marking status.', 'scorva'),
                     ['status' => 403]
                 );
             }
@@ -272,7 +272,7 @@ final class Rest_Reviews
         if ($repository->count_for_session($session_id) <= 1) {
             return new \WP_Error(
                 'pr_review_last_round',
-                __('Cannot remove the only review round in this project.', 'project-reviews'),
+                __('Cannot remove the only review round in this project.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -287,7 +287,7 @@ final class Rest_Reviews
             if ($expected === '' || $phrase !== $expected) {
                 return new \WP_Error(
                     'pr_review_delete_confirmation_required',
-                    __('Type the exact review round name to delete marks and remove this round.', 'project-reviews'),
+                    __('Type the exact review round name to delete marks and remove this round.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -325,7 +325,7 @@ final class Rest_Reviews
         if (!is_array($criteria)) {
             return new \WP_Error(
                 'pr_invalid_criteria',
-                __('Criteria must be an array.', 'project-reviews'),
+                __('Criteria must be an array.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -601,9 +601,9 @@ final class Rest_Reviews
         $message = $has_marks
             ? __(
                 'Criteria cannot be edited after scoring has started. Unlock the rubric to make changes.',
-                'project-reviews'
+                'scorva'
             )
-            : __('Criteria cannot be edited while the rubric is confirmed.', 'project-reviews');
+            : __('Criteria cannot be edited while the rubric is confirmed.', 'scorva');
 
         return new \WP_Error('pr_rubric_locked', $message, ['status' => 409]);
     }
@@ -627,7 +627,7 @@ final class Rest_Reviews
         if ($review_id <= 0) {
             return new \WP_Error(
                 'pr_invalid_review',
-                __('Review id is required.', 'project-reviews'),
+                __('Review id is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -636,7 +636,7 @@ final class Rest_Reviews
         if (!$repository->belongs_to_session($review_id, $session_id)) {
             return new \WP_Error(
                 'pr_review_not_found',
-                __('Review not found in this project.', 'project-reviews'),
+                __('Review not found in this project.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -645,7 +645,7 @@ final class Rest_Reviews
         if ($review === null) {
             return new \WP_Error(
                 'pr_review_not_found',
-                __('Review not found.', 'project-reviews'),
+                __('Review not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -663,7 +663,7 @@ final class Rest_Reviews
         if ($session_id <= 0) {
             return new \WP_Error(
                 'pr_invalid_session',
-                __('Project id is required.', 'project-reviews'),
+                __('Project id is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -687,7 +687,7 @@ final class Rest_Reviews
         if ($sessions->find_by_id($session_id) === null) {
             return new \WP_Error(
                 'pr_session_not_found',
-                __('Project not found.', 'project-reviews'),
+                __('Project not found.', 'scorva'),
                 ['status' => 404]
             );
         }

@@ -96,7 +96,7 @@ final class PanelReportService
         if (!SessionPanelReportSettings::is_settings_frozen($session_id)) {
             return new \WP_Error(
                 'panel_report_settings_not_frozen',
-                __('The project coordinator must freeze panel report settings before downloading the PDF.', 'project-reviews'),
+                __('The project coordinator must freeze panel report settings before downloading the PDF.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -118,19 +118,19 @@ final class PanelReportService
     ): array|\WP_Error {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         $panel = $this->panels->find_by_id($panel_id);
         if ($panel === null || (int) ($panel['session_id'] ?? 0) !== $session_id) {
             return new \WP_Error(
                 'pr_panel_not_found',
-                __('Panel not found in this project.', 'project-reviews'),
+                __('Panel not found in this project.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -144,7 +144,7 @@ final class PanelReportService
         if ($students === []) {
             return new \WP_Error(
                 'offline_scoring_no_students',
-                __('This panel has no enrolled students for this review.', 'project-reviews'),
+                __('This panel has no enrolled students for this review.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -165,18 +165,18 @@ final class PanelReportService
     ): array|\WP_Error {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($review['status'] ?? '') !== ReviewRepository::STATUS_CONFIRMED) {
             return new \WP_Error(
                 'rubric_not_confirmed',
-                __('The rubric for this review is not confirmed yet.', 'project-reviews'),
+                __('The rubric for this review is not confirmed yet.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -199,7 +199,7 @@ final class PanelReportService
         if ($reports === []) {
             return new \WP_Error(
                 'offline_scoring_no_panels',
-                __('No panels with enrolled students were found for this review.', 'project-reviews'),
+                __('No panels with enrolled students were found for this review.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -259,20 +259,20 @@ final class PanelReportService
         if ($this->freezes->is_frozen($review_id, $panel_id)) {
             return new \WP_Error(
                 'panel_scores_frozen',
-                __('This panel is already frozen.', 'project-reviews'),
+                __('This panel is already frozen.', 'scorva'),
                 ['status' => 403]
             );
         }
 
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($session['status'] ?? '') === SessionRepository::STATUS_CLOSED) {
             return new \WP_Error(
                 'session_closed',
-                __('This project is closed. Marking is no longer allowed.', 'project-reviews'),
+                __('This project is closed. Marking is no longer allowed.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -280,20 +280,20 @@ final class PanelReportService
         if ((string) ($session['status'] ?? '') !== SessionRepository::STATUS_ACTIVE) {
             return new \WP_Error(
                 'session_not_active',
-                __('This project is not active yet. Marking is not open.', 'project-reviews'),
+                __('This project is not active yet. Marking is not open.', 'scorva'),
                 ['status' => 403]
             );
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($review['status'] ?? '') !== ReviewRepository::STATUS_CONFIRMED) {
             return new \WP_Error(
                 'rubric_not_confirmed',
-                __('The rubric for this review is not confirmed yet.', 'project-reviews'),
+                __('The rubric for this review is not confirmed yet.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -301,7 +301,7 @@ final class PanelReportService
         if ($this->reviews->is_coordinator_marks_locked($review_id)) {
             return new \WP_Error(
                 'coordinator_marks_locked',
-                __('The coordinator locked marking for this review. No further mark changes are allowed.', 'project-reviews'),
+                __('The coordinator locked marking for this review. No further mark changes are allowed.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -309,7 +309,7 @@ final class PanelReportService
         if (!$this->reviews->is_marking_active($review_id)) {
             return new \WP_Error(
                 'marking_inactive',
-                __('This review round is not open for marking.', 'project-reviews'),
+                __('This review round is not open for marking.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -319,7 +319,7 @@ final class PanelReportService
         if ($criteria_count === 0) {
             return new \WP_Error(
                 'invalid_criterion',
-                __('This review has no rubric criteria.', 'project-reviews'),
+                __('This review has no rubric criteria.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -334,7 +334,7 @@ final class PanelReportService
         if ($student_ids === [] || $reviewer_user_ids === []) {
             return new \WP_Error(
                 'panel_freeze_incomplete',
-                __('Cannot freeze: this panel has no students or reviewers assigned.', 'project-reviews'),
+                __('Cannot freeze: this panel has no students or reviewers assigned.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -385,7 +385,7 @@ final class PanelReportService
         if (!$this->freezes->is_frozen($review_id, $panel_id)) {
             return new \WP_Error(
                 'panel_not_frozen',
-                __('This panel is not frozen, so a panel unfreeze request is not needed.', 'project-reviews'),
+                __('This panel is not frozen, so a panel unfreeze request is not needed.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -394,7 +394,7 @@ final class PanelReportService
         if ($reason === '') {
             return new \WP_Error(
                 'unfreeze_reason_required',
-                __('Please explain why the panel should be unfrozen.', 'project-reviews'),
+                __('Please explain why the panel should be unfrozen.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -402,7 +402,7 @@ final class PanelReportService
         if (strlen($reason) > 500) {
             return new \WP_Error(
                 'unfreeze_reason_too_long',
-                __('Reason must be 500 characters or fewer.', 'project-reviews'),
+                __('Reason must be 500 characters or fewer.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -431,7 +431,7 @@ final class PanelReportService
         if ($request === null) {
             return new \WP_Error(
                 'panel_unfreeze_request_not_found',
-                __('Panel unfreeze request not found.', 'project-reviews'),
+                __('Panel unfreeze request not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -439,7 +439,7 @@ final class PanelReportService
         if ((string) ($request['status'] ?? '') !== PanelUnfreezeRequestRepository::STATUS_PENDING) {
             return new \WP_Error(
                 'panel_unfreeze_request_not_pending',
-                __('This panel unfreeze request is no longer pending.', 'project-reviews'),
+                __('This panel unfreeze request is no longer pending.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -450,12 +450,12 @@ final class PanelReportService
 
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         $unfrozen = $this->freezes->unfreeze($review_id, $panel_id);
@@ -464,7 +464,7 @@ final class PanelReportService
         if ($granted === null) {
             return new \WP_Error(
                 'panel_unfreeze_request_not_pending',
-                __('This panel unfreeze request is no longer pending.', 'project-reviews'),
+                __('This panel unfreeze request is no longer pending.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -503,19 +503,19 @@ final class PanelReportService
     ): bool|\WP_Error {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         $panel = $this->panels->find_by_id($panel_id);
         if ($panel === null || (int) ($panel['session_id'] ?? 0) !== $session_id) {
             return new \WP_Error(
                 'pr_panel_not_found',
-                __('Panel not found in this project.', 'project-reviews'),
+                __('Panel not found in this project.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -523,7 +523,7 @@ final class PanelReportService
         if (!$this->assignments->is_reviewer_on_panel($review_id, $panel_id, $user_id)) {
             return new \WP_Error(
                 'not_assigned',
-                __('You are not assigned to this panel.', 'project-reviews'),
+                __('You are not assigned to this panel.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -531,7 +531,7 @@ final class PanelReportService
         if (!$this->assignments->is_panel_head_for_user($review_id, $panel_id, $user_id)) {
             return new \WP_Error(
                 'not_panel_coordinator',
-                __('Only the panel coordinator can access this panel report.', 'project-reviews'),
+                __('Only the panel coordinator can access this panel report.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -602,7 +602,7 @@ final class PanelReportService
             if ($display_name === '') {
                 $display_name = sprintf(
                     /* translators: %d: WordPress user id */
-                    __('Reviewer #%d', 'project-reviews'),
+                    __('Reviewer #%d', 'scorva'),
                     $reviewer_user_id
                 );
             }
@@ -622,12 +622,12 @@ final class PanelReportService
                 count($reviewers_missing_marks) === 1
                     ? sprintf(
                         /* translators: %s: reviewer display name */
-                        __('Cannot freeze the panel yet: %s still has students without a score on every criterion.', 'project-reviews'),
+                        __('Cannot freeze the panel yet: %s still has students without a score on every criterion.', 'scorva'),
                         $names
                     )
                     : sprintf(
                         /* translators: %s: comma-separated reviewer names */
-                        __('Cannot freeze the panel yet: %s still have students without a score on every criterion.', 'project-reviews'),
+                        __('Cannot freeze the panel yet: %s still have students without a score on every criterion.', 'scorva'),
                         $names
                     ),
                 [
@@ -645,12 +645,12 @@ final class PanelReportService
                 count($reviewers_not_frozen) === 1
                     ? sprintf(
                         /* translators: %s: reviewer display name */
-                        __('Cannot freeze the panel yet: %s must freeze their personal scores for this review first. Ask them to use Freeze on their marking grid.', 'project-reviews'),
+                        __('Cannot freeze the panel yet: %s must freeze their personal scores for this review first. Ask them to use Freeze on their marking grid.', 'scorva'),
                         $names
                     )
                     : sprintf(
                         /* translators: %s: comma-separated reviewer names */
-                        __('Cannot freeze the panel yet: %s must each freeze their personal scores for this review first. Ask them to use Freeze on their marking grid.', 'project-reviews'),
+                        __('Cannot freeze the panel yet: %s must each freeze their personal scores for this review first. Ask them to use Freeze on their marking grid.', 'scorva'),
                         $names
                     ),
                 [
@@ -680,7 +680,7 @@ final class PanelReportService
         if (count($names) === 2) {
             return sprintf(
                 /* translators: 1: first name, 2: second name */
-                __('%1$s and %2$s', 'project-reviews'),
+                __('%1$s and %2$s', 'scorva'),
                 $names[0],
                 $names[1]
             );
@@ -690,7 +690,7 @@ final class PanelReportService
 
         return sprintf(
             /* translators: 1: comma-separated names, 2: final name */
-            __('%1$s, and %2$s', 'project-reviews'),
+            __('%1$s, and %2$s', 'scorva'),
             implode(', ', $names),
             $last
         );

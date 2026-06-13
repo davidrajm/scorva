@@ -4,6 +4,7 @@
  */
 
 import { cloneElement, useEffect } from '@wordpress/element';
+import { post } from './api';
 import { getAppDisplayName } from './appBranding';
 import { Icon } from './components/NavIcon';
 import { IconRailTooltip } from './components/IconRailTooltip';
@@ -55,6 +56,27 @@ function AuthActions() {
 	const loginUrl = window.prAppData?.loginUrl;
 	const logoutUrl = window.prAppData?.logoutUrl;
 	const user = getCurrentUser();
+
+	if ( user && window.prAppData?.portalMode ) {
+		const handlePortalLogout = async () => {
+			try {
+				await post( '/portal/logout' );
+			} catch {
+				// Session already gone — fall through to reload.
+			}
+			window.location.reload();
+		};
+
+		return (
+			<button
+				type="button"
+				className={ authLinkClass }
+				onClick={ handlePortalLogout }
+			>
+				Log out
+			</button>
+		);
+	}
 
 	if ( user && logoutUrl ) {
 		return (

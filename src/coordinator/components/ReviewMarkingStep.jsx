@@ -103,8 +103,8 @@ export function ReviewMarkingStep( {
 		setInviteNotice( null );
 		try {
 			const result = await post(
-				`/sessions/${ sessionId }/invite-reviewers`,
-				{}
+				`/sessions/${ sessionId }/send-all-credentials`,
+				{ force: false }
 			);
 			setInviteNotice( {
 				variant: ( result.failed ?? 0 ) > 0 ? 'warning' : 'success',
@@ -178,8 +178,8 @@ export function ReviewMarkingStep( {
 				title="Email all reviewers?"
 				consequences={ [
 					`${ reviewerCount } distinct reviewer email${ reviewerCount === 1 ? '' : 's' } will be contacted.`,
-					'New or provisioned accounts receive a temporary password; existing accounts keep their password.',
-					'Credentials remain valid until this project is closed.',
+					'Reviewers who have already received credentials are skipped — use "Resend to all" on the Reviewers step to force a refresh.',
+					'Reviewer portal access is suspended when you close the project.',
 				] }
 				confirmLabel="Send emails"
 				confirmVariant="primary"

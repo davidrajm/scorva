@@ -117,11 +117,6 @@ final class ScenarioBuilder
                 'email' => 'reviewer' . $i . '@journey.test',
                 'user_id' => $user_id,
             ]);
-            $this->wpdb->insert($this->wpdb->prefix . 'pr_session_reviewers', [
-                'session_id' => $this->session_id,
-                'user_id' => $user_id,
-                'provisioned_for_session' => 1,
-            ]);
         }
 
         return $this;
@@ -241,7 +236,7 @@ final class ScenarioBuilder
         }
 
         if ($this->session_closed) {
-            (new SessionCloseService($this->wpdb))->close($this->session_id, false, 1);
+            (new SessionCloseService($this->wpdb))->close($this->session_id, 1);
         }
 
         return [

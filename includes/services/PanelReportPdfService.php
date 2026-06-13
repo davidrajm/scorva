@@ -37,7 +37,7 @@ final class PanelReportPdfService
         if ($reports === []) {
             return new \WP_Error(
                 'offline_scoring_no_panels',
-                __('No panels with enrolled students were found for this review.', 'project-reviews'),
+                __('No panels with enrolled students were found for this review.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -93,7 +93,7 @@ final class PanelReportPdfService
         if ($contexts === []) {
             return new \WP_Error(
                 'pdf_empty',
-                __('Nothing to render.', 'project-reviews'),
+                __('Nothing to render.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -101,7 +101,7 @@ final class PanelReportPdfService
         if (!class_exists(Dompdf::class)) {
             return new \WP_Error(
                 'pdf_unavailable',
-                __('PDF generation is not available on this server.', 'project-reviews'),
+                __('PDF generation is not available on this server.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -378,8 +378,9 @@ CSS;
             if (($block['type'] ?? '') === 'image') {
                 if ($logo_data_uri !== '') {
                     $width = (float) ($block['width_in'] ?? 4.0);
+                    $width = max(0.5, min(8.0, $width));
                     $html .= sprintf(
-                        '<img src="%s" style="width: %.2fin;" alt="" />',
+                        '<img src="%s" style="width: %.2fin; max-height: 1.5in; height: auto;" alt="" />',
                         esc_attr($logo_data_uri),
                         $width
                     );

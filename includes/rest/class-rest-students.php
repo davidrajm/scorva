@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ProjectReviews;
 
 use ProjectReviews\Repositories\FieldDefinitionRepository;
+use ProjectReviews\Repositories\ProgramRepository;
 use ProjectReviews\Repositories\StudentRepository;
 
 final class Rest_Students
@@ -131,7 +132,7 @@ final class Rest_Students
         if ($student === null) {
             return new \WP_Error(
                 'pr_student_not_found',
-                __('Student not found.', 'project-reviews'),
+                __('Student not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -149,11 +150,19 @@ final class Rest_Students
             return $data;
         }
 
+        if (isset($data['program']) && $data['program'] !== '') {
+            $program_error = self::validate_program_against_catalog($data['program']);
+            if ($program_error instanceof \WP_Error) {
+                return $program_error;
+            }
+            $data['program'] = $program_error; // canonical name
+        }
+
         $repository = new StudentRepository();
         if ($repository->reg_no_exists($data['reg_no'])) {
             return new \WP_Error(
                 'pr_duplicate_reg_no',
-                __('A student with this registration number already exists.', 'project-reviews'),
+                __('A student with this registration number already exists.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -176,7 +185,7 @@ final class Rest_Students
         if ($existing === null) {
             return new \WP_Error(
                 'pr_student_not_found',
-                __('Student not found.', 'project-reviews'),
+                __('Student not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -186,10 +195,18 @@ final class Rest_Students
             return $data;
         }
 
+        if (isset($data['program']) && $data['program'] !== '') {
+            $program_error = self::validate_program_against_catalog($data['program']);
+            if ($program_error instanceof \WP_Error) {
+                return $program_error;
+            }
+            $data['program'] = $program_error; // canonical name
+        }
+
         if (isset($data['reg_no']) && $repository->reg_no_exists($data['reg_no'], $id)) {
             return new \WP_Error(
                 'pr_duplicate_reg_no',
-                __('A student with this registration number already exists.', 'project-reviews'),
+                __('A student with this registration number already exists.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -211,7 +228,7 @@ final class Rest_Students
         if ($repository->find_by_id($id) === null) {
             return new \WP_Error(
                 'pr_student_not_found',
-                __('Student not found.', 'project-reviews'),
+                __('Student not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -250,7 +267,7 @@ final class Rest_Students
         if ($field_key === '') {
             return new \WP_Error(
                 'pr_invalid_field',
-                __('Field key is required.', 'project-reviews'),
+                __('Field key is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -258,7 +275,7 @@ final class Rest_Students
         if (!preg_match('/^[a-z][a-z0-9_]*$/', $field_key)) {
             return new \WP_Error(
                 'pr_invalid_field',
-                __('Field key must start with a letter and contain only lowercase letters, numbers, and underscores.', 'project-reviews'),
+                __('Field key must start with a letter and contain only lowercase letters, numbers, and underscores.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -267,7 +284,7 @@ final class Rest_Students
         if ($repository->find_by_field_key($field_key) !== null) {
             return new \WP_Error(
                 'pr_duplicate_field',
-                __('A field with this key already exists.', 'project-reviews'),
+                __('A field with this key already exists.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -296,7 +313,7 @@ final class Rest_Students
         if ($existing === null) {
             return new \WP_Error(
                 'pr_field_not_found',
-                __('Field definition not found.', 'project-reviews'),
+                __('Field definition not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -311,7 +328,7 @@ final class Rest_Students
             if ($field_key === '' || !preg_match('/^[a-z][a-z0-9_]*$/', $field_key)) {
                 return new \WP_Error(
                     'pr_invalid_field',
-                    __('Field key must start with a letter and contain only lowercase letters, numbers, and underscores.', 'project-reviews'),
+                    __('Field key must start with a letter and contain only lowercase letters, numbers, and underscores.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -320,7 +337,7 @@ final class Rest_Students
             if ($duplicate !== null && (int) $duplicate['id'] !== $id) {
                 return new \WP_Error(
                     'pr_duplicate_field',
-                    __('A field with this key already exists.', 'project-reviews'),
+                    __('A field with this key already exists.', 'scorva'),
                     ['status' => 409]
                 );
             }
@@ -343,7 +360,7 @@ final class Rest_Students
         if ($repository->find_by_id($id) === null) {
             return new \WP_Error(
                 'pr_field_not_found',
-                __('Field definition not found.', 'project-reviews'),
+                __('Field definition not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -362,7 +379,7 @@ final class Rest_Students
         if (!is_array($body)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import payload must be a JSON object.', 'project-reviews'),
+                __('Import payload must be a JSON object.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -371,7 +388,7 @@ final class Rest_Students
         if (!is_array($rows) || $rows === []) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import requires at least one row.', 'project-reviews'),
+                __('Import requires at least one row.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -380,21 +397,48 @@ final class Rest_Students
         if (!in_array($policy, ['skip', 'update'], true)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Duplicate policy must be "skip" or "update".', 'project-reviews'),
+                __('Duplicate policy must be "skip" or "update".', 'scorva'),
                 ['status' => 400]
             );
         }
 
         $field_keys = self::custom_field_keys();
+        $program_catalog = self::build_program_catalog();
         $normalized = [];
-        foreach ($rows as $row) {
+        $pre_errors = [];
+
+        foreach ($rows as $index => $row) {
             if (!is_array($row)) {
                 continue;
             }
+
+            $line = $index + 1;
+            $reg_no = (string) ($row['reg_no'] ?? '');
+            $raw_program = trim((string) ($row['program'] ?? ''));
+            $canonical_program = '';
+
+            if ($raw_program !== '') {
+                $lower = strtolower($raw_program);
+                if (isset($program_catalog[$lower])) {
+                    $canonical_program = $program_catalog[$lower];
+                } else {
+                    $pre_errors[] = [
+                        'row' => $line,
+                        'reg_no' => $reg_no,
+                        'message' => sprintf(
+                            /* translators: %s: program name from CSV */
+                            __('Program "%s" is not in the catalog. Add it to the program catalog before importing.', 'scorva'),
+                            $raw_program
+                        ),
+                    ];
+                    continue;
+                }
+            }
+
             $entry = [
-                'reg_no' => (string) ($row['reg_no'] ?? ''),
+                'reg_no' => $reg_no,
                 'name' => (string) ($row['name'] ?? ''),
-                'program' => (string) ($row['program'] ?? ''),
+                'program' => $canonical_program,
                 'batch' => (string) ($row['batch'] ?? ''),
             ];
             $meta = [];
@@ -411,6 +455,10 @@ final class Rest_Students
 
         $repository = new StudentRepository();
         $result = $repository->import_rows($normalized, $policy);
+
+        // Prepend program-validation errors (they count as failures).
+        $result['failed'] = (int) ($result['failed'] ?? 0) + count($pre_errors);
+        $result['errors'] = array_merge($pre_errors, $result['errors'] ?? []);
         $result['error_csv'] = self::build_error_csv($result['errors']);
 
         return $result;
@@ -428,6 +476,54 @@ final class Rest_Students
         }
 
         return $keys;
+    }
+
+    /**
+     * Validate a program name against the catalog (case-insensitive).
+     *
+     * @return string|\WP_Error Canonical program name on success, WP_Error on failure.
+     */
+    private static function validate_program_against_catalog(string $program): string|\WP_Error
+    {
+        $catalog = self::build_program_catalog();
+        $lower = strtolower(trim($program));
+
+        if ($lower === '') {
+            return '';
+        }
+
+        if (!isset($catalog[$lower])) {
+            return new \WP_Error(
+                'pr_invalid_program',
+                sprintf(
+                    /* translators: %s: program name */
+                    __('Program "%s" is not in the catalog. Add it to the program catalog first.', 'scorva'),
+                    $program
+                ),
+                ['status' => 400]
+            );
+        }
+
+        return $catalog[$lower];
+    }
+
+    /**
+     * Build a lowercase-keyed map of program names from the catalog.
+     *
+     * @return array<string, string> lowercase name => canonical name
+     */
+    private static function build_program_catalog(): array
+    {
+        $repository = new ProgramRepository();
+        $catalog = [];
+        foreach ($repository->list() as $program) {
+            $name = (string) ($program['name'] ?? '');
+            if ($name !== '') {
+                $catalog[strtolower($name)] = $name;
+            }
+        }
+
+        return $catalog;
     }
 
     /**
@@ -515,7 +611,7 @@ final class Rest_Students
             if ($reg_no === null || $reg_no === '') {
                 return new \WP_Error(
                     'pr_invalid_student',
-                    __('Registration number is required.', 'project-reviews'),
+                    __('Registration number is required.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -525,7 +621,7 @@ final class Rest_Students
             if ($name === null || $name === '') {
                 return new \WP_Error(
                     'pr_invalid_student',
-                    __('Name is required.', 'project-reviews'),
+                    __('Name is required.', 'scorva'),
                     ['status' => 400]
                 );
             }

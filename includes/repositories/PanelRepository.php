@@ -167,6 +167,25 @@ final class PanelRepository
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    public function find_reviewer_by_token(string $token): ?array
+    {
+        $token = trim($token);
+        if ($token === '') {
+            return null;
+        }
+
+        $sql = $this->wpdb->prepare(
+            "SELECT * FROM {$this->reviewers_table} WHERE token = %s",
+            $token
+        );
+        $row = $this->wpdb->get_row($sql, 'ARRAY_A');
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function list_reviewers(int $panel_id): array
@@ -308,7 +327,7 @@ final class PanelRepository
     }
 
     /**
-     * @param array{name?: string, email?: string, weight?: float|int|string, user_id?: int|null, panel_id?: int} $data
+     * @param array{name?: string, email?: string, weight?: float|int|string, user_id?: int|null, panel_id?: int, token?: string|null, password_hash?: string|null, password_encrypted?: string|null, credentials_sent_at?: string|null} $data
      */
     public function update_reviewer(int $id, array $data): bool
     {
@@ -353,6 +372,14 @@ final class PanelRepository
         if (array_key_exists('is_panel_head', $data)) {
             $row['is_panel_head'] = (int) ((bool) $data['is_panel_head']);
             $format[] = '%d';
+        }
+
+        foreach (['token', 'password_hash', 'password_encrypted', 'credentials_sent_at'] as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+            $row[$key] = $data[$key] === null ? null : (string) $data[$key];
+            $format[] = '%s';
         }
 
         if ($row === []) {

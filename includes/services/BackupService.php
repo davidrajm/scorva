@@ -95,7 +95,7 @@ final class BackupService
         $session_ids = array_values(array_filter($session_ids, static fn (int $id): bool => $id > 0));
 
         $timestamp = gmdate('Y-m-d-His');
-        $filename = 'project-reviews-backup-full-' . $timestamp . '.zip';
+        $filename = 'scorva-backup-full-' . $timestamp . '.zip';
 
         return $this->build_zip($session_ids, 'full', null, $filename);
     }
@@ -109,14 +109,14 @@ final class BackupService
         if ($session === null) {
             return new \WP_Error(
                 'pr_session_not_found',
-                __('Project not found.', 'project-reviews'),
+                __('Project not found.', 'scorva'),
                 ['status' => 404]
             );
         }
 
         $slug = $this->session_slug($session_id, $session);
         $timestamp = gmdate('Y-m-d-His');
-        $filename = 'project-reviews-backup-' . $slug . '-' . $timestamp . '.zip';
+        $filename = 'scorva-backup-' . $slug . '-' . $timestamp . '.zip';
 
         return $this->build_zip([$session_id], 'project', $session_id, $filename);
     }
@@ -134,7 +134,7 @@ final class BackupService
         if (!class_exists(\ZipArchive::class)) {
             return new \WP_Error(
                 'pr_zip_unavailable',
-                __('PHP Zip extension (ZipArchive) is required for backups. Enable ext-zip on the server.', 'project-reviews'),
+                __('PHP Zip extension (ZipArchive) is required for backups. Enable ext-zip on the server.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -167,7 +167,7 @@ final class BackupService
 
             return new \WP_Error(
                 'pr_backup_failed',
-                __('Could not create backup archive.', 'project-reviews'),
+                __('Could not create backup archive.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -732,7 +732,7 @@ final class BackupService
         if (!wp_mkdir_p($dir)) {
             return new \WP_Error(
                 'pr_backup_failed',
-                __('Could not create a temporary directory for the backup.', 'project-reviews'),
+                __('Could not create a temporary directory for the backup.', 'scorva'),
                 ['status' => 500]
             );
         }

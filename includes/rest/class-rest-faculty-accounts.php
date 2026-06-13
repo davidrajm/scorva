@@ -22,6 +22,16 @@ final class Rest_Faculty_Accounts
                     'callback' => [self::class, 'list_accounts'],
                     'permission_callback' => $read,
                 ],
+                [
+                    'methods' => 'POST',
+                    'callback' => [self::class, 'create_account'],
+                    'permission_callback' => $write,
+                ],
+                [
+                    'methods' => 'DELETE',
+                    'callback' => [self::class, 'bulk_delete'],
+                    'permission_callback' => $write,
+                ],
             ]
         );
 
@@ -41,6 +51,16 @@ final class Rest_Faculty_Accounts
             [
                 'methods' => 'POST',
                 'callback' => [self::class, 'sync_directory'],
+                'permission_callback' => $write,
+            ]
+        );
+
+        register_rest_route(
+            Rest_Bootstrap::NAMESPACE,
+            '/faculty-accounts/(?P<id>\d+)',
+            [
+                'methods' => 'DELETE',
+                'callback' => [self::class, 'delete_account'],
                 'permission_callback' => $write,
             ]
         );
@@ -72,7 +92,7 @@ final class Rest_Faculty_Accounts
         if (!is_array($body)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import payload must be a JSON object.', 'project-reviews'),
+                __('Import payload must be a JSON object.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -81,7 +101,7 @@ final class Rest_Faculty_Accounts
         if (!is_array($rows) || $rows === []) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import requires at least one row.', 'project-reviews'),
+                __('Import requires at least one row.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -90,7 +110,7 @@ final class Rest_Faculty_Accounts
         if (!in_array($policy, ['skip', 'update'], true)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Duplicate policy must be "skip" or "update".', 'project-reviews'),
+                __('Duplicate policy must be "skip" or "update".', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -121,5 +141,105 @@ final class Rest_Faculty_Accounts
         unset($request);
 
         return (new FacultyAccountService())->sync_from_directory();
+    }
+
+    /**
+     * POST /faculty-accounts — create a single faculty reviewer account.
+     *
+     * @return array<string, mixed>|\WP_Error
+     */
+    public static function create_account(\WP_REST_Request $request): array|\WP_Error
+    {
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            return new \WP_Error(
+                'pr_invalid_request',
+                __('Request body must be a JSON object.', 'scorva'),
+                ['status' => 400]
+            );
+        }
+
+        $name = trim((string) ($body['name'] ?? ''));
+        $email = strtolower(trim((string) ($body['email'] ?? '')));
+        $emp_id = trim((string) ($body['emp_id'] ?? ''));
+        $designation = trim((string) ($body['designation'] ?? ''));
+        $gender = trim((string) ($body['gender'] ?? ''));
+
+        $errors = [];
+
+        if ($name === '') {
+            $errors['name'] = __('Name is required.', 'scorva');
+        }
+
+        if ($email === '') {
+            $errors['email'] = __('Email is required.', 'scorva');
+        } elseif (!is_email($email)) {
+            $errors['email'] = __('A valid email address is required.', 'scorva');
+        }
+
+        if ($errors !== []) {
+            return new \WP_Error(
+                'pr_validation_error',
+                __('Validation failed.', 'scorva'),
+                ['status' => 422, 'fields' => $errors]
+            );
+        }
+
+        $result = (new FacultyAccountService())->provision_single(
+            $email,
+            $name,
+            $emp_id !== '' ? $emp_id : null,
+            $designation,
+            $gender
+        );
+
+        if ($result instanceof \WP_Error) {
+            return $result;
+        }
+
+        return $result;
+    }
+
+    /**
+     * DELETE /faculty-accounts/{id} — delete a single faculty reviewer account.
+     *
+     * @return array<string, mixed>|\WP_Error
+     */
+    public static function delete_account(\WP_REST_Request $request): array|\WP_Error
+    {
+        $user_id = (int) $request->get_param('id');
+
+        return (new FacultyAccountService())->delete_reviewer($user_id);
+    }
+
+    /**
+     * DELETE /faculty-accounts — bulk-delete faculty reviewer accounts.
+     * Body: { "ids": [1, 2, 3] }
+     *
+     * @return array<string, mixed>|\WP_Error
+     */
+    public static function bulk_delete(\WP_REST_Request $request): array|\WP_Error
+    {
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            return new \WP_Error(
+                'pr_invalid_request',
+                __('Request body must be a JSON object.', 'scorva'),
+                ['status' => 400]
+            );
+        }
+
+        $ids = $body['ids'] ?? [];
+        if (!is_array($ids) || $ids === []) {
+            return new \WP_Error(
+                'pr_invalid_request',
+                __('ids must be a non-empty array.', 'scorva'),
+                ['status' => 400]
+            );
+        }
+
+        $user_ids = array_map('intval', $ids);
+
+        return (new FacultyAccountService())->bulk_delete_reviewers($user_ids);
     }
 }

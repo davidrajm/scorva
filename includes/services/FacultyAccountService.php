@@ -121,6 +121,66 @@ final class FacultyAccountService
     }
 
     /**
+     * Create a single faculty reviewer account via the REST API.
+     *
+     * Validates email format before passing to the provisioning layer.
+     *
+     * @return array<string, mixed>|\WP_Error
+     */
+    public function provision_single(
+        string $email,
+        string $name,
+        ?string $emp_id = null,
+        string $designation = '',
+        string $gender = ''
+    ): array|\WP_Error {
+        if (!\is_email($email)) {
+            return new \WP_Error(
+                'pr_invalid_email',
+                __('A valid email address is required.', 'scorva'),
+                ['status' => 422]
+            );
+        }
+
+        $result = $this->provision->provision_reviewer_account(
+            $email,
+            $name,
+            $emp_id,
+            false,
+            null,
+            null,
+            [
+                'designation' => $designation,
+                'gender' => $gender,
+            ]
+        );
+
+        if ($result instanceof \WP_Error) {
+            return $result;
+        }
+
+        $user_id = (int) $result['user_id'];
+        $user = function_exists('get_userdata') ? get_userdata($user_id) : false;
+
+        $this->audit->log(
+            'faculty_create_single',
+            'system',
+            0,
+            null,
+            json_encode(
+                ['user_id' => $user_id, 'email' => $email, 'created' => $result['created']],
+                JSON_THROW_ON_ERROR
+            )
+        );
+
+        return [
+            'user_id' => $user_id,
+            'created' => (bool) $result['created'],
+            'account' => $user !== false && $user !== null ? $this->format_account($user) : null,
+        ];
+    }
+
+    /**
      * @param list<array<string, mixed>> $rows
      * @return array<string, mixed>
      */
@@ -194,9 +254,6 @@ final class FacultyAccountService
                 $email,
                 $name,
                 $emp_id,
-                false,
-                null,
-                null,
                 [
                     'designation' => trim((string) ($row['designation'] ?? '')),
                     'gender' => trim((string) ($row['gender'] ?? '')),
@@ -243,6 +300,143 @@ final class FacultyAccountService
     }
 
     /**
+     * Delete a single faculty reviewer account.
+     *
+     * Deletion strategy: BLOCK with a clear error if the reviewer is currently
+     * assigned to any active panel row in pr_panel_reviewers (matched by user_id).
+     * We do NOT cascade-delete marks or panel assignments — the coordinator must
+     * remove the reviewer from panels first. This prevents accidental data loss.
+     *
+     * @return array{deleted: true}|\WP_Error
+     */
+    public function delete_reviewer(int $user_id): array|\WP_Error
+    {
+        global $wpdb;
+
+        if ($user_id <= 0) {
+            return new \WP_Error(
+                'pr_invalid_user',
+                __('Invalid user ID.', 'scorva'),
+                ['status' => 400]
+            );
+        }
+
+        if (!function_exists('get_userdata')) {
+            return new \WP_Error(
+                'pr_provision_unavailable',
+                __('User management is not available.', 'scorva'),
+                ['status' => 500]
+            );
+        }
+
+        $user = get_userdata($user_id);
+        if ($user === false || $user === null) {
+            return new \WP_Error(
+                'pr_user_not_found',
+                __('Reviewer account not found.', 'scorva'),
+                ['status' => 404]
+            );
+        }
+
+        // Block deletion if assigned to any active panel row.
+        if (isset($wpdb)) {
+            $reviewers_table = $wpdb->prefix . 'pr_panel_reviewers';
+            $count = (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$reviewers_table} WHERE user_id = %d",
+                    $user_id
+                )
+            );
+
+            if ($count > 0) {
+                return new \WP_Error(
+                    'pr_reviewer_assigned',
+                    sprintf(
+                        /* translators: %d: number of panel assignments */
+                        _n(
+                            'This reviewer is assigned to %d panel. Remove them from all panels before deleting.',
+                            'This reviewer is assigned to %d panels. Remove them from all panels before deleting.',
+                            $count,
+                            'scorva'
+                        ),
+                        $count
+                    ),
+                    ['status' => 409]
+                );
+            }
+        }
+
+        // Remove reviewer-specific meta and role, then delete the WP user.
+        if (function_exists('delete_user_meta')) {
+            delete_user_meta($user_id, 'pr_faculty_emp_id');
+            delete_user_meta($user_id, 'pr_faculty_designation');
+            delete_user_meta($user_id, 'pr_faculty_gender');
+            delete_user_meta($user_id, 'pr_force_password_change');
+        }
+
+        // Remove from session_reviewers table if present.
+        if (isset($wpdb)) {
+            $session_reviewers_table = $wpdb->prefix . 'pr_session_reviewers';
+            $wpdb->delete($session_reviewers_table, ['user_id' => $user_id], ['%d']);
+        }
+
+        if (!function_exists('wp_delete_user')) {
+            return new \WP_Error(
+                'pr_provision_unavailable',
+                __('User deletion is not available.', 'scorva'),
+                ['status' => 500]
+            );
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+        wp_delete_user($user_id);
+
+        $this->audit->log(
+            'faculty_delete_reviewer',
+            'system',
+            0,
+            null,
+            json_encode(['user_id' => $user_id], JSON_THROW_ON_ERROR)
+        );
+
+        return ['deleted' => true];
+    }
+
+    /**
+     * Bulk-delete reviewer accounts.
+     *
+     * Each ID is processed independently; blocked IDs are collected in errors[]
+     * rather than aborting the whole batch.
+     *
+     * @param list<int> $user_ids
+     * @return array{deleted: int, failed: int, errors: list<array{user_id: int, message: string}>}
+     */
+    public function bulk_delete_reviewers(array $user_ids): array
+    {
+        $result = [
+            'deleted' => 0,
+            'failed' => 0,
+            'errors' => [],
+        ];
+
+        foreach ($user_ids as $user_id) {
+            $user_id = (int) $user_id;
+            $outcome = $this->delete_reviewer($user_id);
+            if ($outcome instanceof \WP_Error) {
+                $result['failed']++;
+                $result['errors'][] = [
+                    'user_id' => $user_id,
+                    'message' => $outcome->get_error_message(),
+                ];
+            } else {
+                $result['deleted']++;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * @return array<string, mixed>|\WP_Error
      */
     public function sync_from_directory(): array|\WP_Error
@@ -269,7 +463,7 @@ final class FacultyAccountService
                 continue;
             }
 
-            if ($email === '' || $emp_id === '') {
+            if ($email === '' || !\is_email($email) || $emp_id === '') {
                 $result['skipped']++;
                 continue;
             }
@@ -279,9 +473,6 @@ final class FacultyAccountService
                 $email,
                 (string) ($row['name'] ?? ''),
                 $emp_id,
-                false,
-                null,
-                null,
                 [
                     'designation' => (string) ($row['designation'] ?? ''),
                     'gender' => (string) ($row['gender'] ?? ''),
