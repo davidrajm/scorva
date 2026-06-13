@@ -1387,4 +1387,11 @@ if (!function_exists('check_admin_referer')) {
     }
 }
 
+if (!function_exists('is_email')) {
+    function is_email(string $email): string|false
+    {
+        return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : false;
+    }
+}
+
 require_once dirname(__DIR__) . '/vendor/autoload.php';

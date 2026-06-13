@@ -134,7 +134,7 @@ final class FacultyAccountService
         string $designation = '',
         string $gender = ''
     ): array|\WP_Error {
-        if (!is_email($email)) {
+        if (!\is_email($email)) {
             return new \WP_Error(
                 'pr_invalid_email',
                 __('A valid email address is required.', 'scorva'),
@@ -463,7 +463,7 @@ final class FacultyAccountService
                 continue;
             }
 
-            if ($email === '' || !is_email($email) || $emp_id === '') {
+            if ($email === '' || !\is_email($email) || $emp_id === '') {
                 $result['skipped']++;
                 continue;
             }
