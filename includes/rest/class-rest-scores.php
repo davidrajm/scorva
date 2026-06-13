@@ -25,7 +25,7 @@ final class Rest_Scores
 
             return new \WP_Error(
                 'rest_forbidden',
-                __('You do not have permission to view scores.', 'project-reviews'),
+                __('You do not have permission to view scores.', 'scorva'),
                 ['status' => 403]
             );
         };
@@ -117,7 +117,7 @@ final class Rest_Scores
         if (!current_user_can(PR_CAP_ENTER_MARKS)) {
             return new \WP_Error(
                 'rest_forbidden',
-                __('You do not have permission to view scores.', 'project-reviews'),
+                __('You do not have permission to view scores.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -129,7 +129,7 @@ final class Rest_Scores
             if (!$marks->is_reviewer_assigned($session_id, $review_id, $student_id, $actor)) {
                 return new \WP_Error(
                     'not_assigned',
-                    __('You are not assigned to view scores for this student.', 'project-reviews'),
+                    __('You are not assigned to view scores for this student.', 'scorva'),
                     ['status' => 403]
                 );
             }
@@ -147,7 +147,7 @@ final class Rest_Scores
 
         return new \WP_Error(
             'not_assigned',
-            __('You are not assigned to view scores for this student.', 'project-reviews'),
+            __('You are not assigned to view scores for this student.', 'scorva'),
             ['status' => 403]
         );
     }

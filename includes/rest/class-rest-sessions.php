@@ -170,7 +170,7 @@ final class Rest_Sessions
         if ($status !== null && !in_array($status, SessionRepository::VALID_STATUSES, true)) {
             return new \WP_Error(
                 'pr_invalid_status',
-                __('Invalid project status filter.', 'project-reviews'),
+                __('Invalid project status filter.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -210,7 +210,7 @@ final class Rest_Sessions
         if ($title === '') {
             return new \WP_Error(
                 'pr_invalid_session',
-                __('Project title is required.', 'project-reviews'),
+                __('Project title is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -230,7 +230,7 @@ final class Rest_Sessions
                     'pr_review_create_failed',
                     sprintf(
                         /* translators: %s: application display name */
-                        __('Project was created but the first review round could not be initialized. Try deactivating and reactivating the %s plugin, then create the project again.', 'project-reviews'),
+                        __('Project was created but the first review round could not be initialized. Try deactivating and reactivating the %s plugin, then create the project again.', 'scorva'),
                         PluginSettings::app_display_name()
                     ),
                     ['status' => 500]
@@ -294,7 +294,7 @@ final class Rest_Sessions
             if ($title === '') {
                 return new \WP_Error(
                     'pr_invalid_session',
-                    __('Project title is required.', 'project-reviews'),
+                    __('Project title is required.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -344,7 +344,7 @@ final class Rest_Sessions
             if ($expected === '' || $phrase !== $expected) {
                 return new \WP_Error(
                     'pr_session_delete_confirmation_required',
-                    __('Type the exact project title to permanently delete this project and all scores.', 'project-reviews'),
+                    __('Type the exact project title to permanently delete this project and all scores.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -356,14 +356,14 @@ final class Rest_Sessions
             if ($error === 'session_not_found') {
                 return new \WP_Error(
                     'pr_session_not_found',
-                    __('Project not found.', 'project-reviews'),
+                    __('Project not found.', 'scorva'),
                     ['status' => 404]
                 );
             }
 
             return new \WP_Error(
                 'pr_session_delete_failed',
-                __('Could not delete project.', 'project-reviews'),
+                __('Could not delete project.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -442,7 +442,7 @@ final class Rest_Sessions
         if (!is_array($student_ids) || $student_ids === []) {
             return new \WP_Error(
                 'pr_invalid_enrolment',
-                __('Provide student_ids or reg_no with name for a new student.', 'project-reviews'),
+                __('Provide student_ids or reg_no with name for a new student.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -487,7 +487,7 @@ final class Rest_Sessions
                 if ($panel === null || (int) $panel['session_id'] !== $session_id) {
                     return new \WP_Error(
                         'pr_panel_not_found',
-                        __('Panel not found in this project.', 'project-reviews'),
+                        __('Panel not found in this project.', 'scorva'),
                         ['status' => 404]
                     );
                 }
@@ -517,7 +517,7 @@ final class Rest_Sessions
         if ($item === null) {
             return new \WP_Error(
                 'pr_enrolment_failed',
-                __('Could not enrol student.', 'project-reviews'),
+                __('Could not enrol student.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -579,7 +579,7 @@ final class Rest_Sessions
         if ($sessions->find_enrolment($session_id, $student_id) === null) {
             return new \WP_Error(
                 'pr_enrolment_not_found',
-                __('Student is not enrolled in this project.', 'project-reviews'),
+                __('Student is not enrolled in this project.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -599,7 +599,7 @@ final class Rest_Sessions
                 if ($panel === null || (int) $panel['session_id'] !== $session_id) {
                     return new \WP_Error(
                         'pr_panel_not_found',
-                        __('Panel not found in this project.', 'project-reviews'),
+                        __('Panel not found in this project.', 'scorva'),
                         ['status' => 404]
                     );
                 }
@@ -690,7 +690,7 @@ final class Rest_Sessions
         if (!is_array($body)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import payload must be a JSON object.', 'project-reviews'),
+                __('Import payload must be a JSON object.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -699,7 +699,7 @@ final class Rest_Sessions
         if (!is_array($rows) || $rows === []) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import requires at least one row.', 'project-reviews'),
+                __('Import requires at least one row.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -752,7 +752,7 @@ final class Rest_Sessions
         if ($name === '') {
             return new \WP_Error(
                 'pr_invalid_panel',
-                __('Panel name is required.', 'project-reviews'),
+                __('Panel name is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -762,7 +762,7 @@ final class Rest_Sessions
         if ($existing !== null) {
             return new \WP_Error(
                 'pr_duplicate_panel',
-                __('A panel with this name already exists.', 'project-reviews'),
+                __('A panel with this name already exists.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -798,7 +798,7 @@ final class Rest_Sessions
             if ($name === '') {
                 return new \WP_Error(
                     'pr_invalid_panel',
-                    __('Panel name is required.', 'project-reviews'),
+                    __('Panel name is required.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -810,7 +810,7 @@ final class Rest_Sessions
                 if ($existing !== null && (int) ($existing['id'] ?? 0) !== $panel_id) {
                     return new \WP_Error(
                         'pr_duplicate_panel',
-                        __('A panel with this name already exists.', 'project-reviews'),
+                        __('A panel with this name already exists.', 'scorva'),
                         ['status' => 409]
                     );
                 }
@@ -840,7 +840,7 @@ final class Rest_Sessions
         if ($student_count > 0) {
             return new \WP_Error(
                 'pr_panel_has_students',
-                __('Cannot remove a panel while students are assigned. Reassign students first.', 'project-reviews'),
+                __('Cannot remove a panel while students are assigned. Reassign students first.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -995,7 +995,7 @@ final class Rest_Sessions
         if ($session === null) {
             return new \WP_Error(
                 'pr_session_not_found',
-                __('Project not found.', 'project-reviews'),
+                __('Project not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -1012,7 +1012,7 @@ final class Rest_Sessions
         if ($panel === null || (int) $panel['session_id'] !== $session_id) {
             return new \WP_Error(
                 'pr_panel_not_found',
-                __('Panel not found.', 'project-reviews'),
+                __('Panel not found.', 'scorva'),
                 ['status' => 404]
             );
         }

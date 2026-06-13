@@ -4,8 +4,10 @@
  * Description: The Review Management System — project review workflows for SASTT.
  * Version: 0.1.0
  * Author: SASTT
- * Text Domain: project-reviews
+ * Text Domain: scorva
  */
+// TODO (manual step): rename the plugin folder from `project-reviews/` to `scorva/` after committing
+// this change — the folder rename must be done outside Claude Code to avoid breaking the session.
 
 declare(strict_types=1);
 
@@ -17,7 +19,7 @@ if (!defined('PR_PLUGIN_VERSION')) {
     define('PR_PLUGIN_VERSION', '0.1.0');
 }
 if (!defined('PR_PLUGIN_SLUG')) {
-    define('PR_PLUGIN_SLUG', 'project-reviews');
+    define('PR_PLUGIN_SLUG', 'scorva');
 }
 if (!defined('PR_PLUGIN_FILE')) {
     define('PR_PLUGIN_FILE', __FILE__);

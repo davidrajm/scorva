@@ -72,7 +72,7 @@ final class Rest_Faculty_Accounts
         if (!is_array($body)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import payload must be a JSON object.', 'project-reviews'),
+                __('Import payload must be a JSON object.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -81,7 +81,7 @@ final class Rest_Faculty_Accounts
         if (!is_array($rows) || $rows === []) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import requires at least one row.', 'project-reviews'),
+                __('Import requires at least one row.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -90,7 +90,7 @@ final class Rest_Faculty_Accounts
         if (!in_array($policy, ['skip', 'update'], true)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Duplicate policy must be "skip" or "update".', 'project-reviews'),
+                __('Duplicate policy must be "skip" or "update".', 'scorva'),
                 ['status' => 400]
             );
         }

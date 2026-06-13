@@ -14,7 +14,7 @@ final class Rest_Auth
             if (!is_user_logged_in()) {
                 return new \WP_Error(
                     'rest_not_logged_in',
-                    __('You must be logged in to access this endpoint.', 'project-reviews'),
+                    __('You must be logged in to access this endpoint.', 'scorva'),
                     ['status' => 401]
                 );
             }
@@ -27,7 +27,7 @@ final class Rest_Auth
                         'pr_account_disabled',
                         sprintf(
                             /* translators: %s: application display name */
-                            __('This account has been disabled for %s.', 'project-reviews'),
+                            __('This account has been disabled for %s.', 'scorva'),
                             PluginSettings::app_display_name()
                         ),
                         ['status' => 403]
@@ -78,7 +78,7 @@ final class Rest_Auth
 
         return new \WP_Error(
             'rest_forbidden',
-            __('You do not have permission to access this endpoint.', 'project-reviews'),
+            __('You do not have permission to access this endpoint.', 'scorva'),
             ['status' => 403]
         );
     }
@@ -101,7 +101,7 @@ final class Rest_Auth
                 'rest_forbidden',
                 sprintf(
                     /* translators: %s: application display name */
-                    __('You do not have permission to access %s.', 'project-reviews'),
+                    __('You do not have permission to access %s.', 'scorva'),
                     PluginSettings::app_display_name()
                 ),
                 ['status' => 403]
@@ -135,7 +135,7 @@ final class Rest_Auth
         if ($nonce === '' || !wp_verify_nonce($nonce, 'wp_rest')) {
             return new \WP_Error(
                 'rest_cookie_invalid_nonce',
-                __('Invalid or missing REST nonce.', 'project-reviews'),
+                __('Invalid or missing REST nonce.', 'scorva'),
                 ['status' => 403]
             );
         }

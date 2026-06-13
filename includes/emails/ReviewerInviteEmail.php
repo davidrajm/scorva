@@ -22,9 +22,9 @@ final class ReviewerInviteEmail
         $brand = PluginSettings::app_short_name();
         $subject = sprintf(
             /* translators: 1: product short name, 2: review project title */
-            __('%1$s: Your reviewer account for %2$s', 'project-reviews'),
+            __('%1$s: Your reviewer account for %2$s', 'scorva'),
             $brand,
-            $session_title !== '' ? $session_title : __('a review project', 'project-reviews')
+            $session_title !== '' ? $session_title : __('a review project', 'scorva')
         );
 
         $message = '<div style="font-family:sans-serif;max-width:560px;color:#1a1a1a;">';
@@ -35,7 +35,7 @@ final class ReviewerInviteEmail
         $message .= esc_html(
             sprintf(
                 /* translators: %s: recipient display name */
-                __('Hello %s,', 'project-reviews'),
+                __('Hello %s,', 'scorva'),
                 $name
             )
         );
@@ -43,23 +43,23 @@ final class ReviewerInviteEmail
         $message .= '<p>';
         $message .= esc_html__(
             'You have been added as a reviewer for this project. Use the credentials below to sign in. These credentials remain valid until the project is closed. We recommend changing your password after your first login.',
-            'project-reviews'
+            'scorva'
         );
         $message .= '</p>';
         $message .= '<table style="margin:16px 0;border-collapse:collapse;">';
         $message .= '<tr><td style="padding:4px 12px 4px 0;font-weight:600;">';
-        $message .= esc_html__('Login URL', 'project-reviews') . '</td><td>';
+        $message .= esc_html__('Login URL', 'scorva') . '</td><td>';
         $message .= '<a href="' . esc_url($login_url) . '">' . esc_html($login_url) . '</a></td></tr>';
         $message .= '<tr><td style="padding:4px 12px 4px 0;font-weight:600;">';
-        $message .= esc_html__('Email', 'project-reviews') . '</td><td>' . esc_html($email) . '</td></tr>';
+        $message .= esc_html__('Email', 'scorva') . '</td><td>' . esc_html($email) . '</td></tr>';
         $message .= '<tr><td style="padding:4px 12px 4px 0;font-weight:600;">';
-        $message .= esc_html__('Password', 'project-reviews') . '</td><td>' . esc_html($password) . '</td></tr>';
+        $message .= esc_html__('Password', 'scorva') . '</td><td>' . esc_html($password) . '</td></tr>';
         $message .= '</table>';
         $message .= '<p style="color:#666;font-size:13px;">';
         $message .= esc_html(
             sprintf(
                 /* translators: %s: application display name */
-                __('This message was sent by %s. Do not share your password.', 'project-reviews'),
+                __('This message was sent by %s. Do not share your password.', 'scorva'),
                 PluginSettings::app_display_name()
             )
         );
@@ -85,9 +85,9 @@ final class ReviewerInviteEmail
         $brand = PluginSettings::app_short_name();
         $subject = sprintf(
             /* translators: 1: product short name, 2: review project title */
-            __('%1$s: Reviewer access for %2$s', 'project-reviews'),
+            __('%1$s: Reviewer access for %2$s', 'scorva'),
             $brand,
-            $session_title !== '' ? $session_title : __('a review project', 'project-reviews')
+            $session_title !== '' ? $session_title : __('a review project', 'scorva')
         );
 
         $message = '<div style="font-family:sans-serif;max-width:560px;color:#1a1a1a;">';
@@ -98,7 +98,7 @@ final class ReviewerInviteEmail
         $message .= esc_html(
             sprintf(
                 /* translators: %s: recipient display name */
-                __('Hello %s,', 'project-reviews'),
+                __('Hello %s,', 'scorva'),
                 $name
             )
         );
@@ -106,14 +106,14 @@ final class ReviewerInviteEmail
         $message .= '<p>';
         $message .= esc_html__(
             'You have been assigned as a reviewer for this project. Sign in with your existing WordPress account using the link below. No new password was issued.',
-            'project-reviews'
+            'scorva'
         );
         $message .= '</p>';
         $message .= '<p><a href="' . esc_url($login_url) . '">' . esc_html($login_url) . '</a></p>';
         $message .= '<p style="color:#666;font-size:13px;">';
         $message .= esc_html__(
             'Reviewer access remains available until the project is closed.',
-            'project-reviews'
+            'scorva'
         );
         $message .= '</p></div>';
 

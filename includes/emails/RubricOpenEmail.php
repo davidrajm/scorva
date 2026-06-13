@@ -23,7 +23,7 @@ final class RubricOpenEmail
         $brand = PluginSettings::app_short_name();
         $subject = sprintf(
             /* translators: 1: product short name, 2: review or session label */
-            __('%1$s: Rubric confirmed — %2$s', 'project-reviews'),
+            __('%1$s: Rubric confirmed — %2$s', 'scorva'),
             $brand,
             $review_label !== '' ? $review_label : $session_title
         );
@@ -31,7 +31,7 @@ final class RubricOpenEmail
         $message = self::wrap(
             '<p>' . esc_html__(
                 'A rubric has been confirmed and marking is now open for reviewers.',
-                'project-reviews'
+                'scorva'
             ) . '</p>'
             . '<p><strong>' . esc_html($session_title) . '</strong> — '
             . esc_html($review_label) . '</p>'
@@ -39,7 +39,7 @@ final class RubricOpenEmail
             . esc_html(
                 sprintf(
                     /* translators: %s: application display name */
-                    __('Sign in to %s', 'project-reviews'),
+                    __('Sign in to %s', 'scorva'),
                     PluginSettings::app_display_name()
                 )
             ) . '</a></p>'

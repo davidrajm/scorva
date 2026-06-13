@@ -136,7 +136,7 @@ export function CloseSession() {
 			const match = disposition.match( /filename="([^"]+)"/ );
 			const filename = match
 				? match[ 1 ]
-				: 'project-reviews-backup.zip';
+				: 'scorva-backup.zip';
 			const url = URL.createObjectURL( blob );
 			const link = document.createElement( 'a' );
 			link.href = url;

@@ -84,7 +84,7 @@ final class MarkService
         )) {
             return new \WP_Error(
                 'marks_frozen',
-                __('Scores are frozen for this review. Contact your coordinator if you need changes.', 'project-reviews'),
+                __('Scores are frozen for this review. Contact your coordinator if you need changes.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -129,7 +129,7 @@ final class MarkService
         if ($status === MarkRepository::STATUS_SUBMITTED && count($criteria_by_id) === 0) {
             return new \WP_Error(
                 'invalid_criterion',
-                __('This review has no rubric criteria.', 'project-reviews'),
+                __('This review has no rubric criteria.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -151,14 +151,14 @@ final class MarkService
             if ($criterion_id <= 0) {
                 return new \WP_Error(
                     'invalid_criterion',
-                    __('Each mark must reference a rubric criterion.', 'project-reviews'),
+                    __('Each mark must reference a rubric criterion.', 'scorva'),
                     ['status' => 400]
                 );
             }
             if (!isset($criteria_by_id[$criterion_id])) {
                 return new \WP_Error(
                     'invalid_criterion',
-                    __('One or more criteria are not part of this rubric.', 'project-reviews'),
+                    __('One or more criteria are not part of this rubric.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -170,7 +170,7 @@ final class MarkService
                 if (!isset($payload_by_id[$criterion_id])) {
                     return new \WP_Error(
                         'invalid_score',
-                        __('All rubric criteria must have a score before submitting.', 'project-reviews'),
+                        __('All rubric criteria must have a score before submitting.', 'scorva'),
                         ['status' => 400]
                     );
                 }
@@ -178,7 +178,7 @@ final class MarkService
                 if ($normalized === null) {
                     return new \WP_Error(
                         'invalid_score',
-                        __('All rubric criteria must have a valid numeric score before submitting.', 'project-reviews'),
+                        __('All rubric criteria must have a valid numeric score before submitting.', 'scorva'),
                         ['status' => 400]
                     );
                 }
@@ -192,7 +192,7 @@ final class MarkService
             if ($score === null && $status === MarkRepository::STATUS_SUBMITTED) {
                 return new \WP_Error(
                     'invalid_score',
-                    __('All rubric criteria must have a valid numeric score before submitting.', 'project-reviews'),
+                    __('All rubric criteria must have a valid numeric score before submitting.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -243,7 +243,7 @@ final class MarkService
         bool $coordinator_scope
     ): array|\WP_Error {
         if (!$this->reviews->belongs_to_session($review_id, $session_id)) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         if (!$coordinator_scope) {
@@ -279,13 +279,13 @@ final class MarkService
     ): ?\WP_Error {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($session['status'] ?? '') === SessionRepository::STATUS_CLOSED) {
             return new \WP_Error(
                 'session_closed',
-                __('This project is closed. Marking is no longer allowed.', 'project-reviews'),
+                __('This project is closed. Marking is no longer allowed.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -293,20 +293,20 @@ final class MarkService
         if ((string) ($session['status'] ?? '') !== SessionRepository::STATUS_ACTIVE) {
             return new \WP_Error(
                 'session_not_active',
-                __('This project is not active yet. Marking is not open.', 'project-reviews'),
+                __('This project is not active yet. Marking is not open.', 'scorva'),
                 ['status' => 403]
             );
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($review['status'] ?? '') !== ReviewRepository::STATUS_CONFIRMED) {
             return new \WP_Error(
                 'rubric_not_confirmed',
-                __('The rubric for this review is not confirmed yet.', 'project-reviews'),
+                __('The rubric for this review is not confirmed yet.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -319,7 +319,7 @@ final class MarkService
         if (!$this->reviews->is_marking_active($review_id)) {
             return new \WP_Error(
                 'marking_inactive',
-                __('This review round is not open for marking.', 'project-reviews'),
+                __('This review round is not open for marking.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -353,7 +353,7 @@ final class MarkService
 
         return new \WP_Error(
             'panel_scores_frozen',
-            __('The panel coordinator finalized scores for this panel. Marks cannot be changed.', 'project-reviews'),
+            __('The panel coordinator finalized scores for this panel. Marks cannot be changed.', 'scorva'),
             ['status' => 403]
         );
     }
@@ -366,7 +366,7 @@ final class MarkService
 
         return new \WP_Error(
             'coordinator_marks_locked',
-            __('The coordinator locked marking for this review. No further mark changes are allowed.', 'project-reviews'),
+            __('The coordinator locked marking for this review. No further mark changes are allowed.', 'scorva'),
             ['status' => 403]
         );
     }
@@ -381,7 +381,7 @@ final class MarkService
         if ($enrolment === null) {
             return new \WP_Error(
                 'not_assigned',
-                __('You are not assigned to mark this student.', 'project-reviews'),
+                __('You are not assigned to mark this student.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -394,7 +394,7 @@ final class MarkService
         if ($panel_id <= 0) {
             return new \WP_Error(
                 'not_assigned',
-                __('You are not assigned to mark this student.', 'project-reviews'),
+                __('You are not assigned to mark this student.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -402,7 +402,7 @@ final class MarkService
         if (!$this->assignments->is_reviewer_on_panel($review_id, $panel_id, $reviewer_user_id)) {
             return new \WP_Error(
                 'not_assigned',
-                __('You are not assigned to mark this student.', 'project-reviews'),
+                __('You are not assigned to mark this student.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -415,7 +415,7 @@ final class MarkService
         if ($score < 0) {
             return new \WP_Error(
                 'invalid_score',
-                __('Score cannot be negative.', 'project-reviews'),
+                __('Score cannot be negative.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -423,7 +423,7 @@ final class MarkService
         if (!$this->is_valid_score_step($score)) {
             return new \WP_Error(
                 'invalid_score',
-                __('Enter a score in steps of 0.5 (e.g. 3, 3.5, 4).', 'project-reviews'),
+                __('Enter a score in steps of 0.5 (e.g. 3, 3.5, 4).', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -433,7 +433,7 @@ final class MarkService
                 'invalid_score',
                 sprintf(
                     /* translators: %s: maximum marks for criterion */
-                    __('Score cannot exceed %s.', 'project-reviews'),
+                    __('Score cannot exceed %s.', 'scorva'),
                     (string) $max_marks
                 ),
                 ['status' => 400]
@@ -515,8 +515,8 @@ final class MarkService
             return new \WP_Error(
                 $code,
                 $code === 'reason_too_short'
-                    ? __('Reason must be at least 10 characters.', 'project-reviews')
-                    : __('A reason is required for attendance correction.', 'project-reviews'),
+                    ? __('Reason must be at least 10 characters.', 'scorva')
+                    : __('A reason is required for attendance correction.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -529,20 +529,20 @@ final class MarkService
 
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($session['status'] ?? '') === SessionRepository::STATUS_CLOSED) {
             return new \WP_Error(
                 'session_closed',
-                __('This project is closed. Attendance cannot be changed.', 'project-reviews'),
+                __('This project is closed. Attendance cannot be changed.', 'scorva'),
                 ['status' => 403]
             );
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         $coordinator_lock = $this->coordinator_lock_error_if_locked($review_id);
@@ -554,7 +554,7 @@ final class MarkService
         if ($panel_id <= 0) {
             return new \WP_Error(
                 'not_assigned',
-                __('This student is not assigned to a panel for this review.', 'project-reviews'),
+                __('This student is not assigned to a panel for this review.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -707,13 +707,13 @@ final class MarkService
     ): array|\WP_Error {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($session['status'] ?? '') === SessionRepository::STATUS_CLOSED) {
             return new \WP_Error(
                 'session_closed',
-                __('This project is closed. Marking is no longer allowed.', 'project-reviews'),
+                __('This project is closed. Marking is no longer allowed.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -721,20 +721,20 @@ final class MarkService
         if ((string) ($session['status'] ?? '') !== SessionRepository::STATUS_ACTIVE) {
             return new \WP_Error(
                 'session_not_active',
-                __('This project is not active yet. Marking is not open.', 'project-reviews'),
+                __('This project is not active yet. Marking is not open.', 'scorva'),
                 ['status' => 403]
             );
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($review['status'] ?? '') !== ReviewRepository::STATUS_CONFIRMED) {
             return new \WP_Error(
                 'rubric_not_confirmed',
-                __('The rubric for this review is not confirmed yet.', 'project-reviews'),
+                __('The rubric for this review is not confirmed yet.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -747,7 +747,7 @@ final class MarkService
         if (!$this->reviews->is_marking_active($review_id)) {
             return new \WP_Error(
                 'marking_inactive',
-                __('This review round is not open for marking.', 'project-reviews'),
+                __('This review round is not open for marking.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -755,7 +755,7 @@ final class MarkService
         if (!$this->assignments->is_reviewer_on_panel($review_id, $panel_id, $reviewer_user_id)) {
             return new \WP_Error(
                 'not_assigned',
-                __('You are not assigned to this panel.', 'project-reviews'),
+                __('You are not assigned to this panel.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -763,7 +763,7 @@ final class MarkService
         if ((new PanelFreezeRepository())->is_frozen($review_id, $panel_id)) {
             return new \WP_Error(
                 'panel_scores_frozen',
-                __('The panel coordinator finalized scores for this panel. Marks cannot be changed.', 'project-reviews'),
+                __('The panel coordinator finalized scores for this panel. Marks cannot be changed.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -773,7 +773,7 @@ final class MarkService
         if ($criteria_count === 0) {
             return new \WP_Error(
                 'invalid_criterion',
-                __('This review has no rubric criteria.', 'project-reviews'),
+                __('This review has no rubric criteria.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -860,7 +860,7 @@ final class MarkService
         if ($reason === '') {
             return new \WP_Error(
                 'unfreeze_reason_required',
-                __('Please explain why you need to edit frozen scores.', 'project-reviews'),
+                __('Please explain why you need to edit frozen scores.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -868,7 +868,7 @@ final class MarkService
         if (strlen($reason) > 500) {
             return new \WP_Error(
                 'unfreeze_reason_too_long',
-                __('Reason must be 500 characters or fewer.', 'project-reviews'),
+                __('Reason must be 500 characters or fewer.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -876,7 +876,7 @@ final class MarkService
         if (!$this->is_review_frozen_for_panel($session_id, $review_id, $panel_id, $reviewer_user_id)) {
             return new \WP_Error(
                 'not_frozen',
-                __('Scores are not frozen for this assignment.', 'project-reviews'),
+                __('Scores are not frozen for this assignment.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -884,7 +884,7 @@ final class MarkService
         if ((new PanelFreezeRepository())->is_frozen($review_id, $panel_id)) {
             return new \WP_Error(
                 'panel_scores_frozen',
-                __('Personal unfreeze is unavailable while the panel is frozen. Ask your panel coordinator to request a panel unfreeze from the project coordinator first.', 'project-reviews'),
+                __('Personal unfreeze is unavailable while the panel is frozen. Ask your panel coordinator to request a panel unfreeze from the project coordinator first.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -914,7 +914,7 @@ final class MarkService
         if ($request === null) {
             return new \WP_Error(
                 'unfreeze_request_not_found',
-                __('Unfreeze request not found.', 'project-reviews'),
+                __('Unfreeze request not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -922,7 +922,7 @@ final class MarkService
         if ((string) ($request['status'] ?? '') !== UnfreezeRequestRepository::STATUS_PENDING) {
             return new \WP_Error(
                 'unfreeze_request_not_pending',
-                __('This unfreeze request is no longer pending.', 'project-reviews'),
+                __('This unfreeze request is no longer pending.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -945,7 +945,7 @@ final class MarkService
         if (!$this->assignments->is_reviewer_on_panel($review_id, $panel_id, $reviewer_user_id)) {
             return new \WP_Error(
                 'not_assigned',
-                __('The reviewer is no longer assigned to this panel.', 'project-reviews'),
+                __('The reviewer is no longer assigned to this panel.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -959,7 +959,7 @@ final class MarkService
         if ($granted === null) {
             return new \WP_Error(
                 'unfreeze_request_not_pending',
-                __('This unfreeze request is no longer pending.', 'project-reviews'),
+                __('This unfreeze request is no longer pending.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -999,13 +999,13 @@ final class MarkService
     ): int|\WP_Error {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($session['status'] ?? '') === SessionRepository::STATUS_CLOSED) {
             return new \WP_Error(
                 'session_closed',
-                __('This project is closed. Marking is no longer allowed.', 'project-reviews'),
+                __('This project is closed. Marking is no longer allowed.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -1013,14 +1013,14 @@ final class MarkService
         if ((string) ($session['status'] ?? '') !== SessionRepository::STATUS_ACTIVE) {
             return new \WP_Error(
                 'session_not_active',
-                __('This project is not active yet. Marking is not open.', 'project-reviews'),
+                __('This project is not active yet. Marking is not open.', 'scorva'),
                 ['status' => 403]
             );
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         $lock_error = $this->coordinator_lock_error_if_locked($review_id);
@@ -1031,7 +1031,7 @@ final class MarkService
         if (!$this->assignments->is_reviewer_on_panel($review_id, $panel_id, $reviewer_user_id)) {
             return new \WP_Error(
                 'not_assigned',
-                __('You are not assigned to this panel.', 'project-reviews'),
+                __('You are not assigned to this panel.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -1089,26 +1089,26 @@ final class MarkService
     ): true|\WP_Error {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($session['status'] ?? '') === SessionRepository::STATUS_CLOSED) {
             return new \WP_Error(
                 'session_closed',
-                __('This project is closed. Marking is no longer available.', 'project-reviews'),
+                __('This project is closed. Marking is no longer available.', 'scorva'),
                 ['status' => 403]
             );
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($review['status'] ?? '') !== ReviewRepository::STATUS_CONFIRMED) {
             return new \WP_Error(
                 'rubric_not_confirmed',
-                __('The rubric for this review is not confirmed yet.', 'project-reviews'),
+                __('The rubric for this review is not confirmed yet.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -1121,7 +1121,7 @@ final class MarkService
         if (!$this->reviews->is_marking_active($review_id)) {
             return new \WP_Error(
                 'marking_inactive',
-                __('This review round is not open for marking.', 'project-reviews'),
+                __('This review round is not open for marking.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -1129,7 +1129,7 @@ final class MarkService
         if (!$this->assignments->is_reviewer_on_panel($review_id, $panel_id, $reviewer_user_id)) {
             return new \WP_Error(
                 'not_assigned',
-                __('You are not assigned to this panel.', 'project-reviews'),
+                __('You are not assigned to this panel.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -1145,7 +1145,7 @@ final class MarkService
         if (!$this->assignments->is_panel_head_for_user($review_id, $panel_id, $user_id)) {
             return new \WP_Error(
                 'not_panel_coordinator',
-                __('Only the panel coordinator for this panel can approve reviewer unfreeze requests.', 'project-reviews'),
+                __('Only the panel coordinator for this panel can approve reviewer unfreeze requests.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -1194,7 +1194,7 @@ final class MarkService
             $panel = $panels->find_by_id($panel_id);
             $unfrozen[] = [
                 'id' => $panel_id,
-                'name' => (string) ($panel['name'] ?? sprintf(__('Panel %d', 'project-reviews'), $panel_id)),
+                'name' => (string) ($panel['name'] ?? sprintf(__('Panel %d', 'scorva'), $panel_id)),
             ];
         }
 
@@ -1215,7 +1215,7 @@ final class MarkService
         if ($panel_ids === []) {
             return new \WP_Error(
                 'no_panels_for_review_lock',
-                __('Assign students to panels before freezing this review.', 'project-reviews'),
+                __('Assign students to panels before freezing this review.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -1223,7 +1223,7 @@ final class MarkService
         if ($readiness['unfrozen_panels'] !== []) {
             return new \WP_Error(
                 'panels_not_all_frozen',
-                __('Every participating panel must freeze panel scores before you can freeze this review.', 'project-reviews'),
+                __('Every participating panel must freeze panel scores before you can freeze this review.', 'scorva'),
                 [
                     'status' => 400,
                     'unfrozen_panels' => $readiness['unfrozen_panels'],
@@ -1241,18 +1241,18 @@ final class MarkService
     {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($review['status'] ?? '') !== ReviewRepository::STATUS_CONFIRMED) {
             return new \WP_Error(
                 'rubric_not_confirmed',
-                __('Only confirmed reviews can be locked.', 'project-reviews'),
+                __('Only confirmed reviews can be locked.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -1296,12 +1296,12 @@ final class MarkService
     {
         $session = $this->sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $review = $this->reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         $was_locked = $this->reviews->is_coordinator_marks_locked($review_id);
@@ -1551,7 +1551,7 @@ final class MarkService
 
         return sprintf(
             /* translators: %d: rubric criterion id */
-            __('Criterion %d', 'project-reviews'),
+            __('Criterion %d', 'scorva'),
             $criterion_id
         );
     }
@@ -1586,7 +1586,7 @@ final class MarkService
         }
 
         if ($items === []) {
-            return __('Some students still need scores on every criterion before you can freeze.', 'project-reviews');
+            return __('Some students still need scores on every criterion before you can freeze.', 'scorva');
         }
 
         if (count($items) === 1) {
@@ -1594,7 +1594,7 @@ final class MarkService
             if (count($item['missing_labels']) === 1) {
                 return sprintf(
                     /* translators: 1: student name, 2: rubric criterion label */
-                    __('%1$s still needs a score for %2$s.', 'project-reviews'),
+                    __('%1$s still needs a score for %2$s.', 'scorva'),
                     $item['student_label'],
                     $item['missing_labels'][0]
                 );
@@ -1602,7 +1602,7 @@ final class MarkService
 
             return sprintf(
                 /* translators: 1: student name, 2: comma-separated criterion labels */
-                __('%1$s still needs scores for: %2$s.', 'project-reviews'),
+                __('%1$s still needs scores for: %2$s.', 'scorva'),
                 $item['student_label'],
                 $this->format_label_list($item['missing_labels'])
             );
@@ -1615,7 +1615,7 @@ final class MarkService
                     '%d student still needs scores before you can freeze:',
                     '%d students still need scores before you can freeze:',
                     count($items),
-                    'project-reviews'
+                    'scorva'
                 ),
                 count($items)
             ),
@@ -1624,7 +1624,7 @@ final class MarkService
         foreach ($items as $item) {
             $lines[] = sprintf(
                 /* translators: 1: student name, 2: comma-separated criterion labels */
-                __('• %1$s — missing: %2$s', 'project-reviews'),
+                __('• %1$s — missing: %2$s', 'scorva'),
                 $item['student_label'],
                 $this->format_label_list($item['missing_labels'])
             );
@@ -1640,7 +1640,7 @@ final class MarkService
         if ($name === '') {
             $name = sprintf(
                 /* translators: %d: student id */
-                __('Student #%d', 'project-reviews'),
+                __('Student #%d', 'scorva'),
                 $student_id
             );
         }
@@ -1669,7 +1669,7 @@ final class MarkService
         if (count($labels) === 2) {
             return sprintf(
                 /* translators: 1: first criterion label, 2: second criterion label */
-                __('%1$s and %2$s', 'project-reviews'),
+                __('%1$s and %2$s', 'scorva'),
                 $labels[0],
                 $labels[1]
             );
@@ -1679,7 +1679,7 @@ final class MarkService
 
         return sprintf(
             /* translators: 1: comma-separated criterion labels, 2: final criterion label */
-            __('%1$s, and %2$s', 'project-reviews'),
+            __('%1$s, and %2$s', 'scorva'),
             implode(', ', $labels),
             $last
         );
@@ -1715,7 +1715,7 @@ final class MarkService
         if ($attendance_status === null || trim($attendance_status) === '') {
             return new \WP_Error(
                 'attendance_required',
-                __('Attendance (present or absent) is required for each student.', 'project-reviews'),
+                __('Attendance (present or absent) is required for each student.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -1728,7 +1728,7 @@ final class MarkService
         )) {
             return new \WP_Error(
                 'invalid_attendance',
-                __('Attendance must be present or absent.', 'project-reviews'),
+                __('Attendance must be present or absent.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -1747,7 +1747,7 @@ final class MarkService
         if ($panel_id <= 0) {
             return new \WP_Error(
                 'not_assigned',
-                __('You are not assigned to mark this student.', 'project-reviews'),
+                __('You are not assigned to mark this student.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -1864,7 +1864,7 @@ final class MarkService
             'attendance_conflict',
             __(
                 'Attendance must match for all reviewers on this review. Resolve the disagreement before saving.',
-                'project-reviews'
+                'scorva'
             ),
             [
                 'status' => 400,
@@ -1898,7 +1898,7 @@ final class MarkService
             if ($panel_id <= 0) {
                 return new \WP_Error(
                     'not_assigned',
-                    __('You are not assigned to mark this student.', 'project-reviews'),
+                    __('You are not assigned to mark this student.', 'scorva'),
                     ['status' => 403]
                 );
             }

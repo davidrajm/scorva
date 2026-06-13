@@ -55,7 +55,7 @@ final class SessionPanelReportSettings
         if ($session_id <= 0) {
             return new \WP_Error(
                 'invalid_session',
-                __('Invalid project.', 'project-reviews'),
+                __('Invalid project.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -63,7 +63,7 @@ final class SessionPanelReportSettings
         if (self::is_settings_frozen($session_id)) {
             return new \WP_Error(
                 'panel_report_settings_frozen',
-                __('Panel report settings are already frozen.', 'project-reviews'),
+                __('Panel report settings are already frozen.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -89,7 +89,7 @@ final class SessionPanelReportSettings
         if ($session_id <= 0) {
             return new \WP_Error(
                 'invalid_session',
-                __('Invalid project.', 'project-reviews'),
+                __('Invalid project.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -97,7 +97,7 @@ final class SessionPanelReportSettings
         if (!self::is_settings_frozen($session_id)) {
             return new \WP_Error(
                 'panel_report_settings_not_frozen',
-                __('Panel report settings are not frozen.', 'project-reviews'),
+                __('Panel report settings are not frozen.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -126,7 +126,7 @@ final class SessionPanelReportSettings
         if (self::is_settings_frozen($session_id)) {
             return new \WP_Error(
                 'panel_report_settings_frozen',
-                __('Panel report settings are frozen. Unfreeze settings before making changes.', 'project-reviews'),
+                __('Panel report settings are frozen. Unfreeze settings before making changes.', 'scorva'),
                 ['status' => 403]
             );
         }

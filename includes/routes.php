@@ -92,7 +92,7 @@ final class Routes
     {
         add_action('wp_enqueue_scripts', static function () use ($app): void {
             wp_enqueue_style(
-                'project-reviews-app-shell',
+                'scorva-app-shell',
                 plugins_url('assets/css/app-shell.css', PR_PLUGIN_FILE),
                 [],
                 PR_PLUGIN_VERSION
@@ -108,13 +108,13 @@ final class Routes
                 ? require $asset_path
                 : ['dependencies' => [], 'version' => PR_PLUGIN_VERSION];
 
-            $handle = 'project-reviews-' . $app;
+            $handle = 'scorva-' . $app;
             $style_handle = $handle . '-styles';
 
             wp_enqueue_style(
                 $style_handle,
                 plugins_url('build/' . $app . '.css', PR_PLUGIN_FILE),
-                ['project-reviews-app-shell'],
+                ['scorva-app-shell'],
                 $asset['version'] ?? PR_PLUGIN_VERSION
             );
 
@@ -399,8 +399,8 @@ final class Routes
 
         status_header(403);
         wp_die(
-            esc_html__('You do not have permission to access this page.', 'project-reviews'),
-            esc_html__('Forbidden', 'project-reviews'),
+            esc_html__('You do not have permission to access this page.', 'scorva'),
+            esc_html__('Forbidden', 'scorva'),
             ['response' => 403]
         );
     }

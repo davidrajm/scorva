@@ -168,13 +168,13 @@ final class Rest_Reviewer_Assignments
         $sessions = new SessionRepository();
         $session = $sessions->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($session['status'] ?? '') === SessionRepository::STATUS_CLOSED) {
             return new \WP_Error(
                 'session_closed',
-                __('This project is closed. Marking is no longer available.', 'project-reviews'),
+                __('This project is closed. Marking is no longer available.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -182,13 +182,13 @@ final class Rest_Reviewer_Assignments
         $reviews = new ReviewRepository();
         $review = $reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($review['status'] ?? '') !== ReviewRepository::STATUS_CONFIRMED) {
             return new \WP_Error(
                 'rubric_not_confirmed',
-                __('The rubric for this review is not confirmed yet.', 'project-reviews'),
+                __('The rubric for this review is not confirmed yet.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -196,7 +196,7 @@ final class Rest_Reviewer_Assignments
         if (!$reviews->is_marking_active($review_id)) {
             return new \WP_Error(
                 'marking_inactive',
-                __('This review round is not open for marking.', 'project-reviews'),
+                __('This review round is not open for marking.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -204,7 +204,7 @@ final class Rest_Reviewer_Assignments
         if ($reviews->is_coordinator_marks_locked($review_id)) {
             return new \WP_Error(
                 'coordinator_marks_locked',
-                __('The coordinator locked marking for this review. No further mark changes are allowed.', 'project-reviews'),
+                __('The coordinator locked marking for this review. No further mark changes are allowed.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -214,7 +214,7 @@ final class Rest_Reviewer_Assignments
         if ($panel_rows === []) {
             return new \WP_Error(
                 'not_assigned',
-                __('You are not assigned to this project.', 'project-reviews'),
+                __('You are not assigned to this project.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -224,7 +224,7 @@ final class Rest_Reviewer_Assignments
             if (!in_array($panel_id, $panel_ids, true)) {
                 return new \WP_Error(
                     'not_assigned',
-                    __('You are not assigned to this panel.', 'project-reviews'),
+                    __('You are not assigned to this panel.', 'scorva'),
                     ['status' => 403]
                 );
             }
@@ -378,7 +378,7 @@ final class Rest_Reviewer_Assignments
         if ($panel_id <= 0) {
             return new \WP_Error(
                 'invalid_panel',
-                __('A panel is required to request unfreeze.', 'project-reviews'),
+                __('A panel is required to request unfreeze.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -425,7 +425,7 @@ final class Rest_Reviewer_Assignments
         if ($panel_id <= 0) {
             return new \WP_Error(
                 'invalid_panel',
-                __('A panel is required to freeze scores.', 'project-reviews'),
+                __('A panel is required to freeze scores.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -449,13 +449,13 @@ final class Rest_Reviewer_Assignments
         $reviews = new ReviewRepository();
         $review = $reviews->find_by_id($review_id);
         if ($review === null || (int) ($review['session_id'] ?? 0) !== $session_id) {
-            return new \WP_Error('pr_review_not_found', __('Review not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_review_not_found', __('Review not found.', 'scorva'), ['status' => 404]);
         }
 
         if ((string) ($review['status'] ?? '') !== ReviewRepository::STATUS_CONFIRMED) {
             return new \WP_Error(
                 'rubric_not_confirmed',
-                __('The rubric for this review is not confirmed yet.', 'project-reviews'),
+                __('The rubric for this review is not confirmed yet.', 'scorva'),
                 ['status' => 403]
             );
         }
@@ -463,7 +463,7 @@ final class Rest_Reviewer_Assignments
         if (!$reviews->is_marking_active($review_id)) {
             return new \WP_Error(
                 'marking_inactive',
-                __('This review round is not open for marking.', 'project-reviews'),
+                __('This review round is not open for marking.', 'scorva'),
                 ['status' => 403]
             );
         }

@@ -183,7 +183,7 @@ final class Rest_Reports
         if ($format !== 'xlsx') {
             return new \WP_Error(
                 'pr_invalid_format',
-                __('Only xlsx is supported for marks grid download.', 'project-reviews'),
+                __('Only xlsx is supported for marks grid download.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -191,7 +191,7 @@ final class Rest_Reports
         if (!in_array($layout, ['rubric', 'reviewer'], true)) {
             return new \WP_Error(
                 'pr_invalid_layout',
-                __('Layout must be rubric or reviewer.', 'project-reviews'),
+                __('Layout must be rubric or reviewer.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -223,7 +223,7 @@ final class Rest_Reports
         } catch (\Throwable $e) {
             return new \WP_Error(
                 'pr_export_failed',
-                __('Report export failed.', 'project-reviews'),
+                __('Report export failed.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -260,7 +260,7 @@ final class Rest_Reports
         if ($format !== 'xlsx') {
             return new \WP_Error(
                 'pr_invalid_format',
-                __('Only xlsx is supported for consolidated scores download.', 'project-reviews'),
+                __('Only xlsx is supported for consolidated scores download.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -290,7 +290,7 @@ final class Rest_Reports
         } catch (\Throwable $e) {
             return new \WP_Error(
                 'pr_export_failed',
-                __('Report export failed.', 'project-reviews'),
+                __('Report export failed.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -304,7 +304,7 @@ final class Rest_Reports
         if (!in_array($format, ['csv', 'xlsx'], true)) {
             return new \WP_Error(
                 'pr_invalid_format',
-                __('Format must be csv or xlsx.', 'project-reviews'),
+                __('Format must be csv or xlsx.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -336,7 +336,7 @@ final class Rest_Reports
         } catch (\Throwable $e) {
             return new \WP_Error(
                 'pr_export_failed',
-                __('Report export failed.', 'project-reviews'),
+                __('Report export failed.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -395,7 +395,7 @@ final class Rest_Reports
         if (!in_array($format, ['csv', 'xlsx'], true)) {
             return new \WP_Error(
                 'pr_invalid_format',
-                __('Format must be csv or xlsx.', 'project-reviews'),
+                __('Format must be csv or xlsx.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -423,7 +423,7 @@ final class Rest_Reports
         } catch (\Throwable $e) {
             return new \WP_Error(
                 'pr_export_failed',
-                __('Report export failed.', 'project-reviews'),
+                __('Report export failed.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -440,7 +440,7 @@ final class Rest_Reports
         if ($format !== 'xlsx') {
             return new \WP_Error(
                 'pr_invalid_format',
-                __('Only xlsx is supported for scores matrix download.', 'project-reviews'),
+                __('Only xlsx is supported for scores matrix download.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -471,7 +471,7 @@ final class Rest_Reports
         } catch (\Throwable $e) {
             return new \WP_Error(
                 'pr_export_failed',
-                __('Report export failed.', 'project-reviews'),
+                __('Report export failed.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -521,18 +521,18 @@ final class Rest_Reports
         $format = strtolower((string) ($request->get_param('format') ?? 'xlsx'));
 
         if (!self::session_exists($session_id)) {
-            return new \WP_Error('pr_session_not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('pr_session_not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         if (in_array($type, ReportQueryService::ALL_TYPES, true)) {
             return new \WP_Error(
                 'pr_report_deprecated',
-                __('This report download is no longer available. Use the Reports downloads tab.', 'project-reviews'),
+                __('This report download is no longer available. Use the Reports downloads tab.', 'scorva'),
                 ['status' => 410]
             );
         }
 
-        return new \WP_Error('pr_invalid_report', __('Unknown report type.', 'project-reviews'), ['status' => 400]);
+        return new \WP_Error('pr_invalid_report', __('Unknown report type.', 'scorva'), ['status' => 400]);
     }
 
     /**
@@ -543,47 +543,47 @@ final class Rest_Reports
         return [
             [
                 'key' => ReportsViewService::PANEL_ROSTER_CATALOG_KEY,
-                'label' => __('Panel roster', 'project-reviews'),
+                'label' => __('Panel roster', 'scorva'),
                 'description' => __(
                     'One row per student: reg no, name, program, panel, guide, attendance, and reviewer slots for the selected review round.',
-                    'project-reviews'
+                    'scorva'
                 ),
                 'scope' => 'review',
             ],
             [
                 'key' => ReportsViewService::CONSOLIDATED_STUDENT_CATALOG_KEY,
-                'label' => __('Consolidated student scores', 'project-reviews'),
+                'label' => __('Consolidated student scores', 'scorva'),
                 'description' => __(
                     'One row per enrolled student with panel context, reviewer rubric marks, review totals, and combined score across all confirmed reviews.',
-                    'project-reviews'
+                    'scorva'
                 ),
                 'scope' => 'session',
             ],
             [
                 'key' => ReportsViewService::OFFLINE_SCORING_SHEET_CATALOG_KEY,
-                'label' => __('Offline scoring sheet', 'project-reviews'),
+                'label' => __('Offline scoring sheet', 'scorva'),
                 'description' => __(
                     'Institutional Review Report PDF with blank reviewer score cells for handwriting before data entry.',
-                    'project-reviews'
+                    'scorva'
                 ),
                 'scope' => 'review',
                 'formats' => ['pdf'],
             ],
             [
                 'key' => ReportsViewService::MARKS_MATRIX_CATALOG_KEY,
-                'label' => __('Rubric marks matrix', 'project-reviews'),
+                'label' => __('Rubric marks matrix', 'scorva'),
                 'description' => __(
                     'Same columns as the Rubric marks live view: panel context, attendance, status, rubric scores by reviewer slot, weighted review score.',
-                    'project-reviews'
+                    'scorva'
                 ),
                 'scope' => 'review',
             ],
             [
                 'key' => ReportsViewService::SCORES_MATRIX_CATALOG_KEY,
-                'label' => __('Overall scores matrix', 'project-reviews'),
+                'label' => __('Overall scores matrix', 'scorva'),
                 'description' => __(
                     'Same columns as the Overall scores live view: panel context, reviewer overall totals by slot, weighted review score.',
-                    'project-reviews'
+                    'scorva'
                 ),
                 'scope' => 'review',
             ],

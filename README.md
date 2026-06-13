@@ -1,8 +1,10 @@
-# Scorva (Project Reviews)
+# Scorva
 
 WordPress plugin for academic project review workflows: student registry, review projects, panels, rubrics, reviewer marking, progress, reports, and backups.
 
-**Technical slug:** `project-reviews` (folder and REST namespace). **Display name** defaults to *Scorva: The Review Management System* and is configurable in WP Admin.
+**Technical slug:** `scorva` (REST namespace: `scorva/v1`, plugin constant: `PR_PLUGIN_SLUG`). **Display name** defaults to *Scorva: The Review Management System* and is configurable in WP Admin.
+
+> **Pending manual step:** The plugin folder is currently named `project-reviews/`. After committing the code changes in this branch, rename it to `scorva/` on the server and update the plugin path in WordPress. This step must be done outside the Claude Code session to avoid breaking the working directory.
 
 ---
 
@@ -22,9 +24,9 @@ Composer and Node are **not** required on the server when you install a **releas
 
 ## Install from release ZIP
 
-1. Build or download `project-reviews-x.y.z.zip` (see [Creating a release ZIP](#creating-a-release-zip) below).
+1. Build or download `scorva-x.y.z.zip` (see [Creating a release ZIP](#creating-a-release-zip) below).
 2. In WP Admin: **Plugins → Add New → Upload Plugin** → choose the ZIP → **Install Now** → **Activate**.
-   - Or unzip into `wp-content/plugins/project-reviews/`.
+   - Or unzip into `wp-content/plugins/scorva/`.
 3. **Settings → Permalinks → Save Changes** (flush rewrite rules). Do this once per site.
 4. Open **`https://your-site.example/reviews/`** — you should see the landing page and **Log in**.
 5. Assign roles (`project_reviews_coordinator`, `project_reviews_reviewer`) or use an administrator with plugin capabilities.
@@ -59,7 +61,7 @@ npm install
 ./bin/release.sh
 ```
 
-This runs `composer test`, `npm ci`, `npm run build`, `composer install --no-dev`, writes **`dist/project-reviews-{version}.zip`**, then restores dev dependencies.
+This runs `composer test`, `npm ci`, `npm run build`, `composer install --no-dev`, writes **`dist/scorva-{version}.zip`**, then restores dev dependencies.
 
 Options:
 
@@ -77,7 +79,7 @@ Composer shortcut:
 composer release
 ```
 
-Publish the file under **GitHub Releases** (or your download page). Tag git to match `Version` in `project-reviews.php`.
+Publish the file under **GitHub Releases** (or your download page). Tag git to match `Version` in `project-reviews.php` (the entry-point filename stays `project-reviews.php` until the folder rename is completed manually).
 
 ---
 

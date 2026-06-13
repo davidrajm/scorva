@@ -55,7 +55,7 @@ final class RestSessionCloseTest extends TestCase
         RestTestFixtures::login_with_cap(PR_CAP_CLOSE_SESSION);
         RestTestFixtures::set_valid_rest_nonce('reopen');
 
-        $request = new WP_REST_Request('POST', '/project-reviews/v1/sessions/1/reopen');
+        $request = new WP_REST_Request('POST', '/scorva/v1/sessions/1/reopen');
         $request->set_param('id', 1);
 
         $result = Rest_Session_Close::reopen_session($request);
@@ -77,7 +77,7 @@ final class RestSessionCloseTest extends TestCase
         RestTestFixtures::login_with_cap(PR_CAP_CLOSE_SESSION);
         RestTestFixtures::set_valid_rest_nonce('reopen-not-closed');
 
-        $request = new WP_REST_Request('POST', '/project-reviews/v1/sessions/2/reopen');
+        $request = new WP_REST_Request('POST', '/scorva/v1/sessions/2/reopen');
         $request->set_param('id', 2);
 
         $result = Rest_Session_Close::reopen_session($request);
@@ -104,7 +104,7 @@ final class RestSessionCloseTest extends TestCase
 
         RestTestFixtures::login_with_cap(PR_CAP_CLOSE_SESSION);
 
-        $request = new WP_REST_Request('GET', '/project-reviews/v1/sessions/3/close-preview');
+        $request = new WP_REST_Request('GET', '/scorva/v1/sessions/3/close-preview');
         $request->set_param('id', 3);
 
         $result = Rest_Session_Close::close_preview($request);

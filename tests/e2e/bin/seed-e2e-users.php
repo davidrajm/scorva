@@ -3,10 +3,10 @@
  * Seed E2E WordPress users for Playwright UI tests.
  *
  * From WordPress root (e.g. .../app/public):
- *   php wp-content/plugins/project-reviews/tests/e2e/bin/seed-e2e-users.php
+ *   php wp-content/plugins/scorva/tests/e2e/bin/seed-e2e-users.php
  *
  * Or with WP-CLI:
- *   wp eval-file wp-content/plugins/project-reviews/tests/e2e/bin/seed-e2e-users.php
+ *   wp eval-file wp-content/plugins/scorva/tests/e2e/bin/seed-e2e-users.php
  *
  * Creates pr_e2e_coordinator and pr_e2e_reviewer with pr_test_fixture user meta.
  */
@@ -16,14 +16,14 @@ if (!defined('ABSPATH')) {
     if (!is_readable($wpLoad)) {
         fwrite(STDERR, "WordPress not found at {$wpLoad}.\n");
         fwrite(STDERR, "cd to your WordPress root (folder with wp-load.php), then run:\n");
-        fwrite(STDERR, "  php wp-content/plugins/project-reviews/tests/e2e/bin/seed-e2e-users.php\n");
+        fwrite(STDERR, "  php wp-content/plugins/scorva/tests/e2e/bin/seed-e2e-users.php\n");
         exit(1);
     }
     require_once __DIR__ . '/wp-local-db-bootstrap.php';
     require_once $wpLoad;
 }
 
-require_once ABSPATH . 'wp-content/plugins/project-reviews/includes/capabilities.php';
+require_once ABSPATH . 'wp-content/plugins/scorva/includes/capabilities.php';
 
 use ProjectReviews\Capabilities;
 

@@ -18,10 +18,10 @@ final class SessionClosedEmail
             return;
         }
 
-        $title = (string) ($session['title'] ?? __('Review project', 'project-reviews'));
+        $title = (string) ($session['title'] ?? __('Review project', 'scorva'));
         $subject = sprintf(
             /* translators: 1: product short name, 2: project title */
-            __('%1$s: Project closed — %2$s', 'project-reviews'),
+            __('%1$s: Project closed — %2$s', 'scorva'),
             PluginSettings::app_short_name(),
             $title
         );
@@ -34,7 +34,7 @@ final class SessionClosedEmail
                         '%d provisioned reviewer account was disabled.',
                         '%d provisioned reviewer accounts were disabled.',
                         count($disabled_user_ids),
-                        'project-reviews'
+                        'scorva'
                     ),
                     count($disabled_user_ids)
                 )
@@ -43,7 +43,7 @@ final class SessionClosedEmail
 
         $message = '<div style="font-family:sans-serif;max-width:560px;color:#1a1a1a;">'
             . '<p style="font-size:18px;font-weight:600;">' . esc_html(PluginSettings::app_display_name()) . '</p>'
-            . '<p>' . esc_html__('The following review project has been closed. No further marks can be submitted.', 'project-reviews') . '</p>'
+            . '<p>' . esc_html__('The following review project has been closed. No further marks can be submitted.', 'scorva') . '</p>'
             . '<p><strong>' . esc_html($title) . '</strong></p>'
             . $disabled_note
             . '</div>';

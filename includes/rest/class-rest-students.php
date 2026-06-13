@@ -131,7 +131,7 @@ final class Rest_Students
         if ($student === null) {
             return new \WP_Error(
                 'pr_student_not_found',
-                __('Student not found.', 'project-reviews'),
+                __('Student not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -153,7 +153,7 @@ final class Rest_Students
         if ($repository->reg_no_exists($data['reg_no'])) {
             return new \WP_Error(
                 'pr_duplicate_reg_no',
-                __('A student with this registration number already exists.', 'project-reviews'),
+                __('A student with this registration number already exists.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -176,7 +176,7 @@ final class Rest_Students
         if ($existing === null) {
             return new \WP_Error(
                 'pr_student_not_found',
-                __('Student not found.', 'project-reviews'),
+                __('Student not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -189,7 +189,7 @@ final class Rest_Students
         if (isset($data['reg_no']) && $repository->reg_no_exists($data['reg_no'], $id)) {
             return new \WP_Error(
                 'pr_duplicate_reg_no',
-                __('A student with this registration number already exists.', 'project-reviews'),
+                __('A student with this registration number already exists.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -211,7 +211,7 @@ final class Rest_Students
         if ($repository->find_by_id($id) === null) {
             return new \WP_Error(
                 'pr_student_not_found',
-                __('Student not found.', 'project-reviews'),
+                __('Student not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -250,7 +250,7 @@ final class Rest_Students
         if ($field_key === '') {
             return new \WP_Error(
                 'pr_invalid_field',
-                __('Field key is required.', 'project-reviews'),
+                __('Field key is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -258,7 +258,7 @@ final class Rest_Students
         if (!preg_match('/^[a-z][a-z0-9_]*$/', $field_key)) {
             return new \WP_Error(
                 'pr_invalid_field',
-                __('Field key must start with a letter and contain only lowercase letters, numbers, and underscores.', 'project-reviews'),
+                __('Field key must start with a letter and contain only lowercase letters, numbers, and underscores.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -267,7 +267,7 @@ final class Rest_Students
         if ($repository->find_by_field_key($field_key) !== null) {
             return new \WP_Error(
                 'pr_duplicate_field',
-                __('A field with this key already exists.', 'project-reviews'),
+                __('A field with this key already exists.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -296,7 +296,7 @@ final class Rest_Students
         if ($existing === null) {
             return new \WP_Error(
                 'pr_field_not_found',
-                __('Field definition not found.', 'project-reviews'),
+                __('Field definition not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -311,7 +311,7 @@ final class Rest_Students
             if ($field_key === '' || !preg_match('/^[a-z][a-z0-9_]*$/', $field_key)) {
                 return new \WP_Error(
                     'pr_invalid_field',
-                    __('Field key must start with a letter and contain only lowercase letters, numbers, and underscores.', 'project-reviews'),
+                    __('Field key must start with a letter and contain only lowercase letters, numbers, and underscores.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -320,7 +320,7 @@ final class Rest_Students
             if ($duplicate !== null && (int) $duplicate['id'] !== $id) {
                 return new \WP_Error(
                     'pr_duplicate_field',
-                    __('A field with this key already exists.', 'project-reviews'),
+                    __('A field with this key already exists.', 'scorva'),
                     ['status' => 409]
                 );
             }
@@ -343,7 +343,7 @@ final class Rest_Students
         if ($repository->find_by_id($id) === null) {
             return new \WP_Error(
                 'pr_field_not_found',
-                __('Field definition not found.', 'project-reviews'),
+                __('Field definition not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -362,7 +362,7 @@ final class Rest_Students
         if (!is_array($body)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import payload must be a JSON object.', 'project-reviews'),
+                __('Import payload must be a JSON object.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -371,7 +371,7 @@ final class Rest_Students
         if (!is_array($rows) || $rows === []) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import requires at least one row.', 'project-reviews'),
+                __('Import requires at least one row.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -380,7 +380,7 @@ final class Rest_Students
         if (!in_array($policy, ['skip', 'update'], true)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Duplicate policy must be "skip" or "update".', 'project-reviews'),
+                __('Duplicate policy must be "skip" or "update".', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -515,7 +515,7 @@ final class Rest_Students
             if ($reg_no === null || $reg_no === '') {
                 return new \WP_Error(
                     'pr_invalid_student',
-                    __('Registration number is required.', 'project-reviews'),
+                    __('Registration number is required.', 'scorva'),
                     ['status' => 400]
                 );
             }
@@ -525,7 +525,7 @@ final class Rest_Students
             if ($name === null || $name === '') {
                 return new \WP_Error(
                     'pr_invalid_student',
-                    __('Name is required.', 'project-reviews'),
+                    __('Name is required.', 'scorva'),
                     ['status' => 400]
                 );
             }

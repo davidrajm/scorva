@@ -190,7 +190,7 @@ final class Rest_Reviewers
         if ($email === '' && $name === '') {
             return new \WP_Error(
                 'pr_invalid_reviewer',
-                __('Email or name is required.', 'project-reviews'),
+                __('Email or name is required.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -201,7 +201,7 @@ final class Rest_Reviewers
             if ($existing !== null) {
                 return new \WP_Error(
                     'pr_reviewer_email_in_session',
-                    __('This email is already assigned to a panel in this project.', 'project-reviews'),
+                    __('This email is already assigned to a panel in this project.', 'scorva'),
                     ['status' => 409]
                 );
             }
@@ -215,7 +215,7 @@ final class Rest_Reviewers
         if ($id <= 0) {
             return new \WP_Error(
                 'pr_reviewer_insert_failed',
-                __('Could not save reviewer.', 'project-reviews'),
+                __('Could not save reviewer.', 'scorva'),
                 ['status' => 500]
             );
         }
@@ -260,7 +260,7 @@ final class Rest_Reviewers
         } elseif ($panel_id > 0 && (int) ($reviewer['panel_id'] ?? 0) !== $panel_id) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found on this panel.', 'project-reviews'),
+                __('Reviewer not found on this panel.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -274,7 +274,7 @@ final class Rest_Reviewers
             if ($existing !== null && (int) ($existing['id'] ?? 0) !== $reviewer_id) {
                 return new \WP_Error(
                     'pr_reviewer_email_in_session',
-                    __('This email is already assigned to a panel in this project.', 'project-reviews'),
+                    __('This email is already assigned to a panel in this project.', 'scorva'),
                     ['status' => 409]
                 );
             }
@@ -325,7 +325,7 @@ final class Rest_Reviewers
         if ($panel_id > 0 && (int) ($reviewer['panel_id'] ?? 0) !== $panel_id) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found on this panel.', 'project-reviews'),
+                __('Reviewer not found on this panel.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -350,7 +350,7 @@ final class Rest_Reviewers
         if (!is_array($body)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import payload must be a JSON object.', 'project-reviews'),
+                __('Import payload must be a JSON object.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -359,7 +359,7 @@ final class Rest_Reviewers
         if (!is_array($rows) || $rows === []) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('Import requires at least one row.', 'project-reviews'),
+                __('Import requires at least one row.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -368,7 +368,7 @@ final class Rest_Reviewers
         if (!in_array($import_mode, ['append', 'replace'], true)) {
             return new \WP_Error(
                 'pr_invalid_import',
-                __('import_mode must be append or replace.', 'project-reviews'),
+                __('import_mode must be append or replace.', 'scorva'),
                 ['status' => 400]
             );
         }
@@ -506,7 +506,7 @@ final class Rest_Reviewers
         if ((new SessionRepository())->find_by_id($id) === null) {
             return new \WP_Error(
                 'pr_session_not_found',
-                __('Project not found.', 'project-reviews'),
+                __('Project not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -523,7 +523,7 @@ final class Rest_Reviewers
         if ($panel === null || (int) $panel['session_id'] !== $session_id) {
             return new \WP_Error(
                 'pr_panel_not_found',
-                __('Panel not found.', 'project-reviews'),
+                __('Panel not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -540,7 +540,7 @@ final class Rest_Reviewers
         if ($reviewer === null) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found.', 'project-reviews'),
+                __('Reviewer not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -549,7 +549,7 @@ final class Rest_Reviewers
         if ($panel === null || (int) ($panel['session_id'] ?? 0) !== $session_id) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found.', 'project-reviews'),
+                __('Reviewer not found.', 'scorva'),
                 ['status' => 404]
             );
         }

@@ -24,7 +24,7 @@ final class PanelHeadService
         if ($reviewer === null) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found.', 'project-reviews'),
+                __('Reviewer not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -33,7 +33,7 @@ final class PanelHeadService
         if ($panel_id <= 0) {
             return new \WP_Error(
                 'pr_reviewer_not_found',
-                __('Reviewer not found.', 'project-reviews'),
+                __('Reviewer not found.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -43,7 +43,7 @@ final class PanelHeadService
             if ($user_id <= 0) {
                 return new \WP_Error(
                     'panel_head_requires_account',
-                    __('A linked account is required before designating a panel coordinator.', 'project-reviews'),
+                    __('A linked account is required before designating a panel coordinator.', 'scorva'),
                     ['status' => 400]
                 );
             }

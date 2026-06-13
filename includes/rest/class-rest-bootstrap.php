@@ -6,7 +6,7 @@ namespace ProjectReviews;
 
 final class Rest_Bootstrap
 {
-    public const NAMESPACE = 'project-reviews/v1';
+    public const NAMESPACE = 'scorva/v1';
 
     public static function register_routes(): void
     {

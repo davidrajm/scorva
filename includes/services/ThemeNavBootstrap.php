@@ -153,7 +153,7 @@ final class ThemeNavBootstrap
                 <?php
                 echo esc_html__(
                     'Project Reviews could not add a menu link automatically.',
-                    'project-reviews'
+                    'scorva'
                 );
                 ?>
                 <?php
@@ -161,7 +161,7 @@ final class ThemeNavBootstrap
                     /* translators: 1: menu label, 2: reviews URL */
                     esc_html__(
                         'Add a custom link labeled %1$s pointing to %2$s under Appearance → Menus.',
-                        'project-reviews'
+                        'scorva'
                     ),
                     '<strong>' . $label . '</strong>',
                     '<code>' . $reviews_url . '</code>'
@@ -170,7 +170,7 @@ final class ThemeNavBootstrap
             </p>
             <p>
                 <a href="<?php echo esc_url($dismiss_url); ?>">
-                    <?php echo esc_html__('Dismiss this notice', 'project-reviews'); ?>
+                    <?php echo esc_html__('Dismiss this notice', 'scorva'); ?>
                 </a>
             </p>
         </div>
@@ -180,14 +180,14 @@ final class ThemeNavBootstrap
     public static function dismiss_manual_notice(): void
     {
         if (!function_exists('current_user_can') || !current_user_can(PR_CAP_MANAGE_SETTINGS)) {
-            wp_die(esc_html__('Forbidden', 'project-reviews'));
+            wp_die(esc_html__('Forbidden', 'scorva'));
         }
 
         check_admin_referer('pr_dismiss_theme_nav_notice');
         update_option(self::NOTICE_DISMISS_OPTION, true);
 
         if (function_exists('wp_safe_redirect')) {
-            wp_safe_redirect(admin_url('options-general.php?page=project-reviews-settings'));
+            wp_safe_redirect(admin_url('options-general.php?page=scorva-settings'));
         }
     }
 
@@ -230,7 +230,7 @@ final class ThemeNavBootstrap
             return 0;
         }
 
-        $created = wp_create_nav_menu(__('Site navigation', 'project-reviews'));
+        $created = wp_create_nav_menu(__('Site navigation', 'scorva'));
         if (is_wp_error($created)) {
             return 0;
         }

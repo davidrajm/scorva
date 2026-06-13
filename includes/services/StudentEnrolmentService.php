@@ -36,7 +36,7 @@ final class StudentEnrolmentService
         if ($this->sessions->find_enrolment($session_id, $student_id) === null) {
             return new \WP_Error(
                 'pr_enrolment_not_found',
-                __('Student is not enrolled in this project.', 'project-reviews'),
+                __('Student is not enrolled in this project.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -46,7 +46,7 @@ final class StudentEnrolmentService
         if ($has_scores && !$allow_with_scores) {
             return new \WP_Error(
                 'pr_student_has_scores',
-                __('Cannot remove this student because marking has started in one or more review rounds.', 'project-reviews'),
+                __('Cannot remove this student because marking has started in one or more review rounds.', 'scorva'),
                 ['status' => 409]
             );
         }
@@ -58,7 +58,7 @@ final class StudentEnrolmentService
         if (!$this->sessions->remove_enrolment($session_id, $student_id)) {
             return new \WP_Error(
                 'pr_enrolment_not_found',
-                __('Student is not enrolled in this project.', 'project-reviews'),
+                __('Student is not enrolled in this project.', 'scorva'),
                 ['status' => 404]
             );
         }
@@ -110,7 +110,7 @@ final class StudentEnrolmentService
                 'pr_remove_students_confirmation_required',
                 sprintf(
                     /* translators: %s is the exact confirmation word the user must type */
-                    __('Type %s to remove all students including those with entered scores.', 'project-reviews'),
+                    __('Type %s to remove all students including those with entered scores.', 'scorva'),
                     self::CONFIRM_WITH_SCORES_PHRASE
                 ),
                 ['status' => 400]

@@ -60,7 +60,7 @@ final class Rest_Session_Panel_Report_Settings
         $session_id = (int) $request->get_param('id');
         $session = (new SessionRepository())->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $settings = SessionPanelReportSettings::get($session_id);
@@ -81,7 +81,7 @@ final class Rest_Session_Panel_Report_Settings
         $session_id = (int) $request->get_param('id');
         $session = (new SessionRepository())->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $body = $request->get_json_params();
@@ -121,7 +121,7 @@ final class Rest_Session_Panel_Report_Settings
         $session_id = (int) $request->get_param('id');
         $session = (new SessionRepository())->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $saved = SessionPanelReportSettings::unfreeze_settings($session_id);
@@ -145,7 +145,7 @@ final class Rest_Session_Panel_Report_Settings
         $session_id = (int) $request->get_param('id');
         $session = (new SessionRepository())->find_by_id($session_id);
         if ($session === null) {
-            return new \WP_Error('not_found', __('Project not found.', 'project-reviews'), ['status' => 404]);
+            return new \WP_Error('not_found', __('Project not found.', 'scorva'), ['status' => 404]);
         }
 
         $body = $request->get_json_params();
