@@ -8,6 +8,7 @@ use ProjectReviews\Repositories\PanelRepository;
 use ProjectReviews\Repositories\SessionRepository;
 use ProjectReviews\Services\PluginSettings;
 use ProjectReviews\Services\ReviewerProvisionService;
+use ProjectReviews\Services\SmtpService;
 use ProjectReviews\Services\TokenService;
 
 final class Rest_Reviewers
@@ -370,12 +371,20 @@ final class Rest_Reviewers
         $body = $request->get_json_params();
         $send_email = !is_array($body) || !array_key_exists('send', $body) || (bool) $body['send'];
 
-        return (new ReviewerProvisionService())->generate_reviewer_credentials(
+        $result = (new ReviewerProvisionService())->generate_reviewer_credentials(
             $session_id,
             $reviewer_id,
             'generate_reviewer_credentials',
             $send_email
         );
+
+        if ($result instanceof \WP_Error) {
+            return $result;
+        }
+
+        $result['smtp_configured'] = (new SmtpService())->is_configured();
+
+        return $result;
     }
 
     /**
@@ -390,7 +399,15 @@ final class Rest_Reviewers
         $session_id = (int) $request->get_param('id');
         $reviewer_id = (int) $request->get_param('reviewer_id');
 
-        return (new ReviewerProvisionService())->resend_current_credentials($session_id, $reviewer_id);
+        $result = (new ReviewerProvisionService())->resend_current_credentials($session_id, $reviewer_id);
+
+        if ($result instanceof \WP_Error) {
+            return $result;
+        }
+
+        $result['smtp_configured'] = (new SmtpService())->is_configured();
+
+        return $result;
     }
 
     /**
@@ -407,7 +424,15 @@ final class Rest_Reviewers
         $body = $request->get_json_params();
         $force = is_array($body) && !empty($body['force']);
 
-        return (new ReviewerProvisionService())->send_all_reviewer_credentials($session_id, $force);
+        $result = (new ReviewerProvisionService())->send_all_reviewer_credentials($session_id, $force);
+
+        if ($result instanceof \WP_Error) {
+            return $result;
+        }
+
+        $result['smtp_configured'] = (new SmtpService())->is_configured();
+
+        return $result;
     }
 
     /**

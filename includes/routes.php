@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ProjectReviews;
 
 use ProjectReviews\Services\PluginSettings;
+use ProjectReviews\Services\SmtpService;
 
 final class Routes
 {
@@ -181,6 +182,7 @@ final class Routes
                 'canAccessMarking' => current_user_can(PR_CAP_ENTER_MARKS),
                 'canCloseProject' => current_user_can(PR_CAP_CLOSE_SESSION),
                 'canManageProjects' => current_user_can(PR_CAP_MANAGE_SESSIONS),
+                'smtpConfigured' => (new SmtpService())->is_configured(),
             ];
 
             if (is_user_logged_in()) {

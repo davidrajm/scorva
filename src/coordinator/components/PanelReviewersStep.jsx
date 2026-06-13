@@ -1017,6 +1017,9 @@ export function PanelReviewersStep({
 	onReload,
 }) {
 	const toast = useToast();
+	const smtpConfigured = window.prAppData?.smtpConfigured !== false;
+	const [sendFailedEmails, setSendFailedEmails] = useState([]);
+
 	const mergePanelReviewers = (panel, panelRows) => {
 		const panelId = Number(panel.id);
 		const normalized = panelRows.map((row) => ({
@@ -1066,6 +1069,7 @@ export function PanelReviewersStep({
 
 	const handleBulkSend = async (force) => {
 		setBulkSending(true);
+		setSendFailedEmails([]);
 		try {
 			const result = await post(`/sessions/${sessionId}/send-all-credentials`, {
 				force,
@@ -1081,6 +1085,12 @@ export function PanelReviewersStep({
 				variant: result.failed > 0 ? 'error' : 'success',
 				message: `Credentials: ${parts.join(', ')}.`,
 			});
+			if (
+				Array.isArray(result.failed_emails) &&
+				result.failed_emails.length > 0
+			) {
+				setSendFailedEmails(result.failed_emails);
+			}
 			await onRefreshReviewers?.();
 		} catch {
 			toast({
@@ -1139,6 +1149,34 @@ export function PanelReviewersStep({
 				account needed. Reviewers who already received credentials are skipped
 				unless you use "Resend to all".
 			</p>
+
+			{ ! smtpConfigured && (
+				<div className="mt-3">
+					<Notice variant="warning">
+						Email will use the server&rsquo;s default mail transport &mdash; SMTP
+						is not configured.{ ' ' }
+						<a
+							href="/wp-admin/admin.php?page=scorva-settings"
+							className="underline"
+						>
+							Go to Settings
+						</a>
+					</Notice>
+				</div>
+			) }
+
+			{ sendFailedEmails.length > 0 && (
+				<div className="mt-3">
+					<Notice
+						variant="error"
+						onDismiss={ () => setSendFailedEmails( [] ) }
+					>
+						{ sendFailedEmails.length } email
+						{ sendFailedEmails.length === 1 ? '' : 's' } failed to send:{ ' ' }
+						{ sendFailedEmails.join( ', ' ) }
+					</Notice>
+				</div>
+			) }
 
 			<AddReviewerForm
 				sessionId={sessionId}

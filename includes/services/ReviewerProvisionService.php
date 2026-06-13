@@ -88,6 +88,7 @@ final class ReviewerProvisionService
      *     reviewer_id: int,
      *     token_created: bool,
      *     email_sent: bool,
+     *     send_failed: bool,
      *     credentials_sent_at: string|null,
      *     portal_url: string,
      *     portal_password: string,
@@ -193,6 +194,7 @@ final class ReviewerProvisionService
             'reviewer_id' => $reviewer_id,
             'token_created' => $token_created,
             'email_sent' => $email_sent,
+            'send_failed' => $send_email && $email !== '' && !$email_sent,
             'credentials_sent_at' => $sent_at ?? ((string) ($reviewer['credentials_sent_at'] ?? '') ?: null),
             'portal_url' => $portal_url,
             'portal_password' => $password,
@@ -211,7 +213,7 @@ final class ReviewerProvisionService
      * password) without regenerating. Use this when the coordinator wants
      * to resend without invalidating an existing session.
      *
-     * @return array{email_sent: bool, credentials_sent_at: string|null}|\WP_Error
+     * @return array{email_sent: bool, send_failed: bool, credentials_sent_at: string|null}|\WP_Error
      */
     public function resend_current_credentials(int $session_id, int $reviewer_id): array|\WP_Error
     {
@@ -288,6 +290,7 @@ final class ReviewerProvisionService
 
         return [
             'email_sent' => $email_sent,
+            'send_failed' => !$email_sent,
             'credentials_sent_at' => $sent_at ?? ((string) ($reviewer['credentials_sent_at'] ?? '') ?: null),
         ];
     }
@@ -309,6 +312,7 @@ final class ReviewerProvisionService
      *     sent: int,
      *     skipped: int,
      *     failed: int,
+     *     failed_emails: list<string>,
      *     details: list<array<string, mixed>>
      * }|\WP_Error
      */
@@ -322,6 +326,7 @@ final class ReviewerProvisionService
         $sent = 0;
         $skipped = 0;
         $failed = 0;
+        $failed_emails = [];
         $details = [];
 
         foreach ($this->panels->list_reviewers_for_session($session_id) as $reviewer) {
@@ -353,6 +358,7 @@ final class ReviewerProvisionService
             $result = $this->generate_reviewer_credentials($session_id, $reviewer_id, 'bulk_send_reviewer_credentials');
             if ($result instanceof \WP_Error) {
                 $failed++;
+                $failed_emails[] = $email;
                 $details[] = [
                     'reviewer_id' => $reviewer_id,
                     'email' => $email,
@@ -364,6 +370,7 @@ final class ReviewerProvisionService
 
             if (!($result['email_sent'] ?? false)) {
                 $failed++;
+                $failed_emails[] = $email;
                 $details[] = [
                     'reviewer_id' => $reviewer_id,
                     'email' => $email,
@@ -396,6 +403,7 @@ final class ReviewerProvisionService
             'sent' => $sent,
             'skipped' => $skipped,
             'failed' => $failed,
+            'failed_emails' => $failed_emails,
             'details' => $details,
         ];
     }
