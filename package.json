@@ -17,7 +17,9 @@
     "test:e2e:sop": "playwright test tests/e2e/specs/capture-sop-screenshots.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "sop:screenshots": "playwright test tests/e2e/specs/capture-sop-screenshots.spec.ts",
-    "sop:screenshots:headed": "playwright test tests/e2e/specs/capture-sop-screenshots.spec.ts --headed"
+    "sop:screenshots:headed": "playwright test tests/e2e/specs/capture-sop-screenshots.spec.ts --headed",
+    "reset": "composer test:teardown -- --confirm",
+    "reset:dry-run": "composer test:teardown -- --dry-run"
   },
   "dependencies": {
     "@wordpress/api-fetch": "^7.15.0",
