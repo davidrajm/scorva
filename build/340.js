@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkscorva=globalThis.webpackChunkscorva||[]).push([[340],{5340(s,e,i){i.d(e,{SessionReviewsWizardRedirect:()=>c});var r=i(7767),a=i(790);function c(){const{id:s}=(0,r.g)();return(0,a.jsx)(r.C5,{to:`/session/${s}/wizard?step=reviews`,replace:!0})}}}]);
