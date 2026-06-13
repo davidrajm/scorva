@@ -499,6 +499,39 @@ video {
 [hidden]:where(:not([hidden="until-found"])) {
   display: none;
 }
+.container {
+  width: 100%;
+}
+@media (min-width: 640px) {
+
+  .container {
+    max-width: 640px;
+  }
+}
+@media (min-width: 768px) {
+
+  .container {
+    max-width: 768px;
+  }
+}
+@media (min-width: 1024px) {
+
+  .container {
+    max-width: 1024px;
+  }
+}
+@media (min-width: 1280px) {
+
+  .container {
+    max-width: 1280px;
+  }
+}
+@media (min-width: 1536px) {
+
+  .container {
+    max-width: 1536px;
+  }
+}
 #pr-root .sr-only {
   position: absolute;
   width: 1px;
@@ -679,6 +712,9 @@ video {
 }
 #pr-root .min-h-\[5rem\] {
   min-height: 5rem;
+}
+#pr-root .min-h-screen {
+  min-height: 100vh;
 }
 #pr-root .w-1\/3 {
   width: 33.333333%;
@@ -1075,6 +1111,9 @@ video {
 #pr-root .p-6 {
   padding: 24px;
 }
+#pr-root .p-8 {
+  padding: 32px;
+}
 #pr-root .px-0\.5 {
   padding-left: 0.125rem;
   padding-right: 0.125rem;
@@ -1175,6 +1214,9 @@ video {
 }
 #pr-root .align-middle {
   vertical-align: middle;
+}
+#pr-root .font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 #pr-root .font-sans {
   font-family: var(--pr-font-family);

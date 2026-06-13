@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from '@wordpress/element';
+import { useCallback, useEffect, useMemo, useRef, useState } from '@wordpress/element';
+import { createPortal } from 'react-dom';
 import { del, get, post, put } from '../../shared/api';
-import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue';
 import {
 	buildReviewersTemplateCsv,
 	downloadCsvText,
 } from '../../shared/reviewerTemplateCsv';
-import { Button, Notice } from '../../shared/components';
+import { Button, ConfirmDialog, Notice, useToast } from '../../shared/components';
+import { getDialogPortalRoot } from '../../shared/components/ConfirmDialog';
 import { TableScrollWrapper } from '../../shared/TableScrollViewport';
 import { TABLE_BODY_ROW_SOFT } from '../../shared/tableStyles';
 import { CsvImportMapper } from './CsvImportMapper';
@@ -13,18 +14,192 @@ import { CsvImportMapper } from './CsvImportMapper';
 const TABLE_COL_COUNT = 6;
 
 function AccountStatus({ reviewer }) {
-	if (reviewer.user_id) {
+	if (reviewer.has_credentials && reviewer.credentials_sent_at) {
+		const sentDate = String(reviewer.credentials_sent_at).slice(0, 10);
 		return (
-			<span className="rounded bg-chip-active-bg px-1.5 py-0.5 text-xs text-chip-active-text">
-				Account linked
+			<span
+				className="rounded bg-chip-active-bg px-1.5 py-0.5 text-xs text-chip-active-text"
+				title={`Credentials emailed ${reviewer.credentials_sent_at}`}
+			>
+				Sent {sentDate}
+			</span>
+		);
+	}
+	if (reviewer.has_credentials) {
+		return (
+			<span className="rounded bg-warning/15 px-1.5 py-0.5 text-xs text-warning">
+				Generated, not delivered
 			</span>
 		);
 	}
 	return (
 		<span className="rounded bg-warning/15 px-1.5 py-0.5 text-xs text-warning">
-			Not provisioned
+			No credentials
 		</span>
 	);
+}
+
+function CopyField({ value, label, autoFocusRef }) {
+	const ownRef = useRef(null);
+	const inputRef = autoFocusRef ?? ownRef;
+	const [copied, setCopied] = useState(false);
+
+	const handleCopy = () => {
+		if (!value) {
+			return;
+		}
+		if (navigator.clipboard) {
+			navigator.clipboard.writeText(value).then(() => {
+				setCopied(true);
+				setTimeout(() => setCopied(false), 2000);
+			});
+		} else {
+			inputRef.current?.select();
+			document.execCommand('copy');
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		}
+	};
+
+	return (
+		<div>
+			{label && (
+				<p className="mb-1 text-xs font-medium text-text-muted">{label}</p>
+			)}
+			<div className="flex gap-2">
+				<input
+					ref={inputRef}
+					type="text"
+					readOnly
+					value={value ?? ''}
+					className="min-w-0 flex-1 rounded-md border border-border bg-surface px-3 py-2 text-sm font-mono text-text"
+					onFocus={(e) => e.target.select()}
+					aria-label={label}
+				/>
+				<Button
+					size="sm"
+					variant={copied ? 'secondary' : 'primary'}
+					onClick={handleCopy}
+				>
+					{copied ? 'Copied!' : 'Copy'}
+				</Button>
+			</div>
+		</div>
+	);
+}
+
+function PortalLinkModal({
+	open,
+	reviewerName,
+	portalUrl,
+	portalPassword,
+	sessionId,
+	reviewerId,
+	onClose,
+	onCredentialsSent,
+}) {
+	const toast = useToast();
+	const dialogRef = useRef(null);
+	const firstInputRef = useRef(null);
+	const [sending, setSending] = useState(false);
+
+	useEffect(() => {
+		if (!open || !dialogRef.current) {
+			return;
+		}
+		firstInputRef.current?.focus();
+
+		const onKeyDown = (e) => {
+			if (e.key === 'Escape') {
+				onClose();
+			}
+		};
+		document.addEventListener('keydown', onKeyDown);
+		return () => document.removeEventListener('keydown', onKeyDown);
+	}, [open, onClose]);
+
+	const handleSend = async () => {
+		setSending(true);
+		try {
+			const result = await post(
+				`/sessions/${sessionId}/reviewers/${reviewerId}/resend-credentials`
+			);
+			if (result?.email_sent) {
+				toast({ variant: 'success', message: 'Credentials emailed to reviewer.' });
+				onCredentialsSent?.(result);
+			} else {
+				toast({
+					variant: 'error',
+					message: 'Email could not be sent. Check the SMTP settings.',
+				});
+			}
+		} catch {
+			toast({ variant: 'error', message: 'Could not send credentials.' });
+		} finally {
+			setSending(false);
+		}
+	};
+
+	if (!open) {
+		return null;
+	}
+
+	const dialog = (
+		<div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40 p-4">
+			<div
+				ref={dialogRef}
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="pr-portal-link-title"
+				className="w-full max-w-lg rounded-md border border-border bg-surface-raised p-6 shadow-card"
+			>
+				<h2
+					id="pr-portal-link-title"
+					className="text-lg font-semibold text-text"
+				>
+					Reviewer credentials
+				</h2>
+				{reviewerName && (
+					<p className="mt-1 text-sm text-text-muted">{reviewerName}</p>
+				)}
+				<div className="mt-4 space-y-3">
+					<CopyField
+						autoFocusRef={firstInputRef}
+						label="Login URL"
+						value={portalUrl}
+					/>
+					{portalPassword ? (
+						<CopyField label="Password" value={portalPassword} />
+					) : (
+						<p className="text-xs text-text-muted">
+							Password not available — use "Regenerate" to create a new
+							one.
+						</p>
+					)}
+				</div>
+				<div className="mt-6 flex items-center justify-between gap-2">
+					<Button
+						variant="primary"
+						size="sm"
+						loading={sending}
+						disabled={!portalPassword}
+						onClick={handleSend}
+					>
+						Send credentials
+					</Button>
+					<Button variant="secondary" onClick={onClose}>
+						Close
+					</Button>
+				</div>
+			</div>
+		</div>
+	);
+
+	if (typeof document === 'undefined') {
+		return dialog;
+	}
+
+	return createPortal(dialog, getDialogPortalRoot());
 }
 
 function ReviewerTableRow({
@@ -32,80 +207,76 @@ function ReviewerTableRow({
 	sessionId,
 	allPanels,
 	onProvision,
-	onResend,
-	onLink,
 	onSaved,
 	onDeleted,
-	onNotice,
 	onPanelHeadChanged,
+	onReviewerUpdated,
 }) {
+	const toast = useToast();
 	const [editing, setEditing] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [deleting, setDeleting] = useState(false);
+	const [provisioning, setProvisioning] = useState(false);
+	const [resending, setResending] = useState(false);
+	const [regenerating, setRegenerating] = useState(false);
+	const [regenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+	const [portalLinkOpen, setPortalLinkOpen] = useState(false);
+	const [localCreds, setLocalCreds] = useState({
+		portalUrl: reviewer.portal_url ?? null,
+		portalPassword: reviewer.portal_password ?? null,
+	});
 	const [name, setName] = useState(reviewer.name ?? '');
 	const [email, setEmail] = useState(reviewer.email ?? '');
 	const [weight, setWeight] = useState(String(reviewer.weight ?? 1));
 	const [panelId, setPanelId] = useState(String(reviewer.panel_id ?? ''));
-	const [userQuery, setUserQuery] = useState('');
-	const [userResults, setUserResults] = useState([]);
-	const debounced = useDebouncedValue(userQuery, 300);
 
 	useEffect(() => {
 		setName(reviewer.name ?? '');
 		setEmail(reviewer.email ?? '');
 		setWeight(String(reviewer.weight ?? 1));
 		setPanelId(String(reviewer.panel_id ?? ''));
-	}, [reviewer]);
-
-	useEffect(() => {
-		if (!debounced || reviewer.user_id) {
-			setUserResults([]);
-			return;
+		// Sync creds when the reviewer record is refreshed from the server
+		if (reviewer.portal_password) {
+			setLocalCreds({
+				portalUrl: reviewer.portal_url ?? null,
+				portalPassword: reviewer.portal_password,
+			});
 		}
-		(async () => {
-			try {
-				const data = await get(
-					`/users/search?q=${encodeURIComponent(debounced)}`
-				);
-				setUserResults(data.users ?? []);
-			} catch {
-				setUserResults([]);
-			}
-		})();
-	}, [debounced, reviewer.user_id]);
+	}, [reviewer]);
 
 	const displayName = reviewer.name?.trim() || 'Unnamed reviewer';
 	const panelIdNum = Number(reviewer.panel_id);
-	const showLinkRow = !reviewer.email && !reviewer.user_id && !editing;
-	const canBePanelHead = Boolean( reviewer.user_id );
+	const canBePanelHead = reviewer.has_credentials || Boolean(reviewer.user_id);
 
-	const handlePanelHeadToggle = async ( event ) => {
+	const handlePanelHeadToggle = async (event) => {
 		const checked = event.target.checked;
-		if ( ! canBePanelHead ) {
+		if (!canBePanelHead) {
 			return;
 		}
 
+		const panelName = reviewer.panel_name || `Panel ${panelIdNum}`;
+
 		try {
 			const updated = await put(
-				`/sessions/${ sessionId }/panels/${ panelIdNum }/reviewers/${ reviewer.id }`,
+				`/sessions/${sessionId}/panels/${panelIdNum}/reviewers/${reviewer.id}`,
 				{ is_panel_head: checked }
 			);
-			onPanelHeadChanged( updated, panelIdNum );
-			onNotice( {
+			onPanelHeadChanged(updated, panelIdNum);
+			toast({
 				variant: 'success',
 				message: checked
-					? 'Panel coordinator updated.'
-					: 'Panel coordinator cleared.',
-			} );
-		} catch ( err ) {
+					? `${displayName} set as panel coordinator for ${panelName}.`
+					: `Panel coordinator cleared for ${panelName}.`,
+			});
+		} catch (err) {
 			const code = err?.code || err?.data?.code;
-			onNotice( {
+			toast({
 				variant: 'error',
 				message:
 					code === 'panel_head_requires_account'
 						? 'Provision or link an account first.'
 						: 'Could not update panel coordinator.',
-			} );
+			});
 		}
 	};
 
@@ -113,16 +284,13 @@ function ReviewerTableRow({
 		const trimmedName = name.trim();
 		const trimmedEmail = email.trim();
 		if (!trimmedName && !trimmedEmail) {
-			onNotice({
-				variant: 'error',
-				message: 'Enter a reviewer name or email.',
-			});
+			toast({ variant: 'error', message: 'Enter a reviewer name or email.' });
 			return;
 		}
 
 		const targetPanelId = Number(panelId);
 		if (!targetPanelId) {
-			onNotice({ variant: 'error', message: 'Select a panel.' });
+			toast({ variant: 'error', message: 'Select a panel.' });
 			return;
 		}
 
@@ -139,15 +307,22 @@ function ReviewerTableRow({
 			);
 			onSaved(updated);
 			setEditing(false);
-			onNotice({
+			toast({
 				variant: 'success',
 				message:
 					targetPanelId !== panelIdNum
 						? 'Reviewer updated and moved to another panel.'
 						: 'Reviewer updated.',
 			});
-		} catch {
-			onNotice({ variant: 'error', message: 'Could not save reviewer.' });
+		} catch (err) {
+			const code = err?.code || err?.data?.code;
+			toast({
+				variant: 'error',
+				message:
+					code === 'pr_reviewer_email_in_session'
+						? 'A reviewer with this email is already in the project.'
+						: 'Could not save reviewer.',
+			});
 		} finally {
 			setSaving(false);
 		}
@@ -168,17 +343,88 @@ function ReviewerTableRow({
 				`/sessions/${sessionId}/panels/${panelIdNum}/reviewers/${reviewer.id}`
 			);
 			onDeleted(reviewer.id);
-			onNotice({ variant: 'success', message: 'Reviewer removed.' });
+			toast({ variant: 'success', message: `${displayName} removed.` });
 		} catch {
-			onNotice({ variant: 'error', message: 'Could not remove reviewer.' });
+			toast({ variant: 'error', message: 'Could not remove reviewer.' });
 		} finally {
 			setDeleting(false);
 		}
 	};
 
+	const handleProvision = async () => {
+		setProvisioning(true);
+		try {
+			await onProvision();
+		} finally {
+			setProvisioning(false);
+		}
+	};
+
+	const handleResend = async () => {
+		setResending(true);
+		try {
+			const result = await post(
+				`/sessions/${sessionId}/reviewers/${reviewer.id}/resend-credentials`
+			);
+			toast(
+				result?.email_sent
+					? {
+							variant: 'success',
+							message: 'Credentials re-sent. Password unchanged.',
+					  }
+					: {
+							variant: 'error',
+							message:
+								'Email could not be sent. Check the SMTP settings.',
+					  }
+			);
+			if (result?.credentials_sent_at) {
+				onReviewerUpdated?.({
+					...reviewer,
+					credentials_sent_at: result.credentials_sent_at,
+				});
+			}
+		} catch {
+			toast({ variant: 'error', message: 'Could not resend credentials.' });
+		} finally {
+			setResending(false);
+		}
+	};
+
+	const handleRegenerateConfirmed = async () => {
+		setRegenerateConfirmOpen(false);
+		setRegenerating(true);
+		try {
+			const result = await post(
+				`/sessions/${sessionId}/reviewers/${reviewer.id}/generate-credentials`,
+				{ send: false }
+			);
+			setLocalCreds({
+				portalUrl: result.portal_url ?? reviewer.portal_url ?? null,
+				portalPassword: result.portal_password ?? null,
+			});
+			setPortalLinkOpen(true);
+			toast({ variant: 'success', message: 'Credentials regenerated.' });
+			onReviewerUpdated?.({
+				...reviewer,
+				has_credentials: true,
+				portal_url: result.portal_url ?? reviewer.portal_url,
+				portal_password: result.portal_password ?? null,
+			});
+		} catch {
+			toast({ variant: 'error', message: 'Could not regenerate credentials.' });
+		} finally {
+			setRegenerating(false);
+		}
+	};
+
+	const openViewLink = () => {
+		setPortalLinkOpen(true);
+	};
+
 	return (
 		<>
-			<tr className={ TABLE_BODY_ROW_SOFT }>
+			<tr className={TABLE_BODY_ROW_SOFT}>
 				<td className="px-4 py-3 font-medium text-text">{displayName}</td>
 				<td className="px-4 py-3 text-text">
 					{reviewer.email ? (
@@ -199,17 +445,17 @@ function ReviewerTableRow({
 						title={
 							canBePanelHead
 								? 'Designate as panel coordinator'
-								: 'Provision or link an account first.'
+								: 'Send credentials first.'
 						}
 					>
 						<input
 							type="checkbox"
-							name={ `panel-coordinator-${ panelIdNum }` }
+							name={`panel-coordinator-${panelIdNum}`}
 							className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-							checked={ Boolean( reviewer.is_panel_head ) }
-							disabled={ ! canBePanelHead }
-							onChange={ handlePanelHeadToggle }
-							aria-label={ `Panel coordinator for ${ displayName }` }
+							checked={Boolean(reviewer.is_panel_head)}
+							disabled={!canBePanelHead}
+							onChange={handlePanelHeadToggle}
+							aria-label={`Panel coordinator for ${displayName}`}
 						/>
 					</label>
 				</td>
@@ -230,15 +476,45 @@ function ReviewerTableRow({
 						>
 							Remove
 						</Button>
-						{reviewer.email && !reviewer.user_id ? (
-							<Button size="sm" variant="primary" onClick={onProvision}>
+						{reviewer.email && !reviewer.has_credentials ? (
+							<Button
+								size="sm"
+								variant="primary"
+								loading={provisioning}
+								onClick={handleProvision}
+							>
 								Send credentials
 							</Button>
 						) : null}
-						{reviewer.user_id ? (
-							<Button size="sm" variant="secondary" onClick={onResend}>
-								Resend credentials
-							</Button>
+						{reviewer.has_credentials ? (
+							<>
+								<Button
+									size="sm"
+									variant="secondary"
+									loading={resending}
+									disabled={regenerating}
+									onClick={handleResend}
+								>
+									Resend
+								</Button>
+								<Button
+									size="sm"
+									variant="ghost"
+									loading={regenerating}
+									disabled={resending}
+									onClick={() => setRegenerateConfirmOpen(true)}
+								>
+									Regenerate
+								</Button>
+								<Button
+									size="sm"
+									variant="ghost"
+									disabled={resending || regenerating}
+									onClick={openViewLink}
+								>
+									View link
+								</Button>
+							</>
 						) : null}
 					</div>
 				</td>
@@ -336,36 +612,37 @@ function ReviewerTableRow({
 					</td>
 				</tr>
 			) : null}
-			{showLinkRow ? (
-				<tr className="border-b border-border/60 bg-surface">
-					<td colSpan={TABLE_COL_COUNT} className="px-4 py-3">
-						<label
-							className="block text-xs font-medium text-text"
-							htmlFor={`link-user-${reviewer.id}`}
-						>
-							Link WordPress user
-						</label>
-						<input
-							id={`link-user-${reviewer.id}`}
-							type="search"
-							value={userQuery}
-							onChange={(e) => setUserQuery(e.target.value)}
-							placeholder="Search by name or email"
-							className="mt-1 w-full max-w-md rounded-md border border-border bg-surface px-2 py-1 text-sm"
-						/>
-						{userResults.map((user) => (
-							<button
-								key={user.id}
-								type="button"
-								className="mt-1 block w-full max-w-md rounded-md px-2 py-1 text-left text-sm hover:bg-surface-raised"
-								onClick={() => onLink(user.id)}
-							>
-								{user.display_name} ({user.email})
-							</button>
-						))}
-					</td>
-				</tr>
-			) : null}
+			<ConfirmDialog
+				open={regenerateConfirmOpen}
+				title={`Regenerate credentials for ${displayName}?`}
+				consequences={[
+					'A new password will be generated and saved immediately.',
+					'The current password stops working right away — the reviewer will be logged out.',
+					'The login URL stays the same; only the password changes.',
+					'Use "Send credentials" in the next screen to email the new password.',
+				]}
+				confirmLabel="Regenerate"
+				confirmVariant="destructive"
+				onCancel={() => setRegenerateConfirmOpen(false)}
+				onConfirm={handleRegenerateConfirmed}
+			/>
+			<PortalLinkModal
+				open={portalLinkOpen}
+				reviewerName={displayName}
+				portalUrl={localCreds.portalUrl ?? reviewer.portal_url ?? null}
+				portalPassword={localCreds.portalPassword ?? reviewer.portal_password ?? null}
+				sessionId={sessionId}
+				reviewerId={reviewer.id}
+				onClose={() => setPortalLinkOpen(false)}
+				onCredentialsSent={(result) => {
+					if (result?.credentials_sent_at) {
+						onReviewerUpdated?.({
+							...reviewer,
+							credentials_sent_at: result.credentials_sent_at,
+						});
+					}
+				}}
+			/>
 		</>
 	);
 }
@@ -473,10 +750,14 @@ function AddReviewerForm({
 				variant: 'success',
 				message: `${label} added to ${panel.name}.`,
 			});
-		} catch {
+		} catch (err) {
+			const code = err?.code || err?.data?.code;
 			setFormNotice({
 				variant: 'error',
-				message: 'Could not add reviewer.',
+				message:
+					code === 'pr_reviewer_email_in_session'
+						? 'A reviewer with this email is already in the project.'
+						: 'Could not add reviewer.',
 			});
 		} finally {
 			setSubmitting(false);
@@ -600,9 +881,6 @@ function PanelReviewerTable({
 	allPanels,
 	setReviewers,
 	onProvision,
-	onResend,
-	onLink,
-	onNotice,
 }) {
 	const panelId = Number(panel.id);
 	const panelReviewers = reviewers.filter(
@@ -695,7 +973,7 @@ function PanelReviewerTable({
 								<th className="px-4 py-3 font-medium">Name</th>
 								<th className="px-4 py-3 font-medium">Email</th>
 								<th className="px-4 py-3 font-medium">Weight</th>
-								<th className="px-4 py-3 font-medium">Account</th>
+								<th className="px-4 py-3 font-medium">Access</th>
 								<th
 									className="px-4 py-3 font-medium"
 									title="One panel coordinator per panel; they can view panel scores and sign off."
@@ -713,12 +991,10 @@ function PanelReviewerTable({
 									sessionId={sessionId}
 									allPanels={allPanels}
 									onProvision={() => onProvision(row.id)}
-									onResend={() => onResend(row.id)}
-									onLink={(userId) => onLink(row.id, userId)}
 									onSaved={handleReviewerSaved}
 									onDeleted={handleReviewerDeleted}
-									onNotice={onNotice}
 									onPanelHeadChanged={handlePanelHeadChanged}
+									onReviewerUpdated={handleReviewerSaved}
 								/>
 							))}
 						</tbody>
@@ -729,6 +1005,8 @@ function PanelReviewerTable({
 	);
 }
 
+const RESEND_ALL_PHRASE = 'RESEND ALL';
+
 export function PanelReviewersStep({
 	sessionId,
 	panels,
@@ -738,6 +1016,7 @@ export function PanelReviewersStep({
 	onRefreshReviewers,
 	onReload,
 }) {
+	const toast = useToast();
 	const mergePanelReviewers = (panel, panelRows) => {
 		const panelId = Number(panel.id);
 		const normalized = panelRows.map((row) => ({
@@ -771,6 +1050,53 @@ export function PanelReviewersStep({
 		downloadCsvText(csv, `session-${sessionId}-reviewers.csv`);
 	}, [sessionPanels, reviewers, sessionId]);
 
+	const [bulkSending, setBulkSending] = useState(false);
+	const [resendAllOpen, setResendAllOpen] = useState(false);
+	const [resendAllPhrase, setResendAllPhrase] = useState('');
+
+	const openResendAllDialog = () => {
+		setResendAllPhrase('');
+		setResendAllOpen(true);
+	};
+
+	const closeResendAllDialog = () => {
+		setResendAllOpen(false);
+		setResendAllPhrase('');
+	};
+
+	const handleBulkSend = async (force) => {
+		setBulkSending(true);
+		try {
+			const result = await post(`/sessions/${sessionId}/send-all-credentials`, {
+				force,
+			});
+			const parts = [`${result.sent} sent`];
+			if (result.skipped > 0) {
+				parts.push(`${result.skipped} skipped`);
+			}
+			if (result.failed > 0) {
+				parts.push(`${result.failed} failed`);
+			}
+			toast({
+				variant: result.failed > 0 ? 'error' : 'success',
+				message: `Credentials: ${parts.join(', ')}.`,
+			});
+			await onRefreshReviewers?.();
+		} catch {
+			toast({
+				variant: 'error',
+				message: 'Could not send credentials.',
+			});
+		} finally {
+			setBulkSending(false);
+		}
+	};
+
+	const handleResendAllConfirm = async () => {
+		closeResendAllDialog();
+		await handleBulkSend(true);
+	};
+
 	if (sessionPanels.length === 0) {
 		return (
 			<section>
@@ -785,11 +1111,33 @@ export function PanelReviewersStep({
 
 	return (
 		<section>
-			<h2 className="text-lg font-semibold text-text">Reviewers</h2>
+			<div className="flex flex-wrap items-center justify-between gap-2">
+				<h2 className="text-lg font-semibold text-text">Reviewers</h2>
+				<div className="flex flex-wrap gap-2">
+					<Button
+						size="sm"
+						variant="primary"
+						loading={bulkSending}
+						onClick={() => handleBulkSend(false)}
+					>
+						Email credentials to all
+					</Button>
+					<Button
+						size="sm"
+						variant="ghost"
+						disabled={bulkSending}
+						onClick={openResendAllDialog}
+					>
+						Resend to all
+					</Button>
+				</div>
+			</div>
 			<p className="mt-1 text-sm text-text-muted">
 				Add reviewers to a panel, download a roster template prefilled with your
-				panels and existing reviewers, or import updates from CSV. Edit, remove,
-				or move reviewers between panels in the tables below.
+				panels and existing reviewers, or import updates from CSV. Each reviewer
+				receives a personal review link and password by email — no WordPress
+				account needed. Reviewers who already received credentials are skipped
+				unless you use "Resend to all".
 			</p>
 
 			<AddReviewerForm
@@ -820,60 +1168,61 @@ export function PanelReviewersStep({
 					reviewers={reviewers}
 					allPanels={sessionPanels}
 					setReviewers={setReviewers}
-					onNotice={onNotice}
 					onProvision={async (reviewerId) => {
-						try {
-							await post(
-								`/sessions/${sessionId}/reviewers/${reviewerId}/provision`
-							);
-							onNotice({
-								variant: 'success',
-								message: 'Credentials sent to reviewer.',
-							});
-							await onRefreshReviewers?.();
-						} catch {
-							onNotice({
-								variant: 'error',
-								message: 'Provisioning failed.',
-							});
-						}
-					}}
-					onResend={async (reviewerId) => {
-						try {
-							await post(
-								`/sessions/${sessionId}/reviewers/${reviewerId}/resend-credentials`
-							);
-							onNotice({
-								variant: 'success',
-								message: 'Invite email resent.',
-							});
-						} catch {
-							onNotice({
-								variant: 'error',
-								message: 'Could not resend credentials.',
-							});
-						}
-					}}
-					onLink={async (reviewerId, userId) => {
-						try {
-							await post(
-								`/sessions/${sessionId}/reviewers/${reviewerId}/link-user`,
-								{ user_id: userId }
-							);
-							onNotice({
-								variant: 'success',
-								message: 'Reviewer linked to user.',
-							});
-							await onRefreshReviewers?.();
-						} catch {
-							onNotice({
-								variant: 'error',
-								message: 'Could not link user.',
-							});
-						}
+						const result = await post(
+							`/sessions/${sessionId}/reviewers/${reviewerId}/generate-credentials`
+						);
+						toast(
+							result?.email_sent
+								? {
+										variant: 'success',
+										message:
+											'Review link and password emailed to reviewer.',
+								  }
+								: {
+										variant: 'error',
+										message:
+											'Credentials generated but the email could not be sent. Check the SMTP settings.',
+								  }
+						);
+						await onRefreshReviewers?.();
 					}}
 				/>
 			))}
+
+			<ConfirmDialog
+				open={resendAllOpen}
+				title="Resend credentials to all reviewers?"
+				consequences={[
+					'New passwords will be generated for every credentialed reviewer.',
+					'Each reviewer will receive a fresh email with their review link and new password.',
+					'Previous passwords are immediately invalidated.',
+					'Reviewers without an email address are skipped.',
+				]}
+				confirmLabel={bulkSending ? 'Sending…' : 'Resend to all'}
+				confirmVariant="destructive"
+				confirmDisabled={
+					resendAllPhrase.trim() !== RESEND_ALL_PHRASE || bulkSending
+				}
+				onCancel={closeResendAllDialog}
+				onConfirm={handleResendAllConfirm}
+			>
+				<div className="space-y-2 text-sm text-text-muted">
+					<p>
+						Type{' '}
+						<strong className="font-mono text-text">{RESEND_ALL_PHRASE}</strong>{' '}
+						to confirm.
+					</p>
+					<input
+						type="text"
+						className="w-full rounded-md border border-border bg-surface px-3 py-2 text-text"
+						value={resendAllPhrase}
+						onChange={(e) => setResendAllPhrase(e.target.value)}
+						autoComplete="off"
+						aria-label={`Type ${RESEND_ALL_PHRASE} to confirm`}
+					/>
+				</div>
+			</ConfirmDialog>
 		</section>
 	);
 }
