@@ -90,20 +90,21 @@
 
 // ── Screenshot assets (change one line to pin an older capture run) ─────────────
 // PNGs live under docs/sop/{sop-screenshots-dir}{id}.png
-// After `npm run sop:screenshots`, set this to the printed folder (e.g. screenshots/2026-05-22_012914/)
+// After `npm run sop:screenshots`, set this to the printed folder (e.g. screenshots/2026-06-13_230646/)
 // Relative to docs/sop/lib/theme.typ → docs/sop/screenshots/…
-#let sop-screenshots-dir = "../screenshots/2026-05-22_012914/"
+#let sop-screenshots-dir = "../screenshots/2026-06-14_002624/"
 
 // When true, embed PNGs listed in sop-captured-ids from sop-screenshots-dir; else placeholder.
 #let use-live-screenshots = true
 
-// IDs present in screenshots/2026-05-22_012914/ (update after `npm run sop:screenshots`)
+// IDs present in screenshots/2026-06-13_234624/ (update after `npm run sop:screenshots`)
 #let sop-captured-ids = (
   "01-landing-login",
   "02-workspace-top-nav",
   "03-coordinator-nav",
   "04-dashboard",
   "05-registry",
+  "06-csv-import-mapper",
   "07-wizard-nav",
   "08-wizard-students",
   "09-wizard-panels",
@@ -113,11 +114,23 @@
   "13-wizard-assignments",
   "14-wizard-open-marking",
   "15-progress-accordion",
+  "17-unfreeze-requests",
   "18-reports-tabs",
   "20-reports-downloads",
+  "22-panel-report-settings",
+  "23-audit-log",
+  "24-close-project",
   "25-reviewer-assignments",
   "26-marking-grid",
+  "27-marking-grid-mobile",
   "28-rubric-form",
+  "29-validation-error",
+  "31-freeze-scores-dialog",
+  "32-unfreeze-request",
+  "33-panel-head-card",
+  "34-panel-report-page",
+  "35-panel-head-unfreeze",
+  "36-portal-login",
 )
 
 #let screenshot-path(id) = sop-screenshots-dir + id + ".png"
@@ -223,7 +236,7 @@
     ]
     #block(inset: 12pt)[
       #set enum(numbering: "1.")
-      #steps.pos()
+      #for s in steps.pos() { s }
     ]
   ]
 }

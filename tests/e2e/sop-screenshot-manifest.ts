@@ -38,6 +38,7 @@ export const SOP_SCREENSHOT_IDS = [
 	'33-panel-head-card',
 	'34-panel-report-page',
 	'35-panel-head-unfreeze',
+	'36-portal-login',
 ] as const;
 
 export type SopScreenshotId = (typeof SOP_SCREENSHOT_IDS)[number];
@@ -49,6 +50,7 @@ export const SOP_SCREENSHOT_IDS_AUTOMATED: SopScreenshotId[] = [
 	'03-coordinator-nav',
 	'04-dashboard',
 	'05-registry',
+	'06-csv-import-mapper',
 	'07-wizard-nav',
 	'08-wizard-students',
 	'09-wizard-panels',
@@ -58,12 +60,23 @@ export const SOP_SCREENSHOT_IDS_AUTOMATED: SopScreenshotId[] = [
 	'13-wizard-assignments',
 	'14-wizard-open-marking',
 	'15-progress-accordion',
+	'17-unfreeze-requests',
 	'18-reports-tabs',
 	'20-reports-downloads',
+	'22-panel-report-settings',
+	'23-audit-log',
 	'24-close-project',
 	'25-reviewer-assignments',
 	'26-marking-grid',
+	'27-marking-grid-mobile',
 	'28-rubric-form',
+	'29-validation-error',
+	'31-freeze-scores-dialog',
+	'32-unfreeze-request',
+	'33-panel-head-card',
+	'34-panel-report-page',
+	'35-panel-head-unfreeze',
+	'36-portal-login',
 ];
 
 /** IDs not yet automated — capture manually per docs/sop/screenshots/README.md */

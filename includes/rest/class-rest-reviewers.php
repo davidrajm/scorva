@@ -191,11 +191,26 @@ final class Rest_Reviewers
             }
         }
 
-        $id = $panels->add_reviewer($panel_id, [
+        // If the email matches an existing WP reviewer account, link the user_id so
+        // the reviewer can access their assignments via both WP and portal auth.
+        $linked_user_id = null;
+        if ($email !== '') {
+            $wp_user = get_user_by('email', $email);
+            if ($wp_user && user_can($wp_user, PR_CAP_ENTER_MARKS)) {
+                $linked_user_id = (int) $wp_user->ID;
+            }
+        }
+
+        $reviewer_data = [
             'email' => $email,
             'name' => $name,
             'weight' => $body['weight'] ?? 1,
-        ]);
+        ];
+        if ($linked_user_id !== null) {
+            $reviewer_data['user_id'] = $linked_user_id;
+        }
+
+        $id = $panels->add_reviewer($panel_id, $reviewer_data);
         if ($id <= 0) {
             return new \WP_Error(
                 'pr_reviewer_insert_failed',
