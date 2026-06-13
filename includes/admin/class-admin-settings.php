@@ -7,6 +7,7 @@ namespace ProjectReviews\Admin;
 use ProjectReviews\Capabilities;
 use ProjectReviews\Rest_Bootstrap;
 use ProjectReviews\Services\PluginSettings;
+use ProjectReviews\Services\SmtpService;
 use ProjectReviews\Services\ThemeNavBootstrap;
 
 final class Admin_Settings
@@ -29,6 +30,16 @@ final class Admin_Settings
                 'type' => 'array',
                 'sanitize_callback' => [PluginSettings::class, 'sanitize'],
                 'default' => PluginSettings::get(),
+            ]
+        );
+
+        register_setting(
+            'project_reviews_settings',
+            SmtpService::OPTION_KEY,
+            [
+                'type' => 'array',
+                'sanitize_callback' => [SmtpService::class, 'sanitize'],
+                'default' => (new SmtpService())->get_settings(),
             ]
         );
 
@@ -63,6 +74,7 @@ final class Admin_Settings
         wp_add_inline_script('pr-admin-settings', self::inline_script());
         wp_localize_script('pr-admin-settings', 'prAdminSettings', [
             'backupUrl' => rest_url(Rest_Bootstrap::NAMESPACE . '/backup/download'),
+            'smtpTestUrl' => rest_url(Rest_Bootstrap::NAMESPACE . '/settings/smtp/test'),
             'restNonce' => wp_create_nonce('wp_rest'),
         ]);
     }
@@ -246,6 +258,13 @@ final class Admin_Settings
                     ); ?>
                 </p>
 
+                <h2><?php echo esc_html__('Email delivery (SMTP)', 'project-reviews'); ?></h2>
+                <p><?php echo esc_html__(
+                    'Send reviewer invitations and notifications through a dedicated SMTP server. Leave the host empty to use the default WordPress mailer.',
+                    'project-reviews'
+                ); ?></p>
+                <?php self::render_smtp_settings(); ?>
+
                 <h2><?php echo esc_html__('Backup', 'project-reviews'); ?></h2>
                 <p><?php echo esc_html__(
                     'Download a ZIP archive with plugin database tables, options, and Excel reports for every project. Use this before migration, disaster recovery, or before enabling destructive uninstall below.',
@@ -307,6 +326,110 @@ final class Admin_Settings
                 <?php submit_button(); ?>
             </form>
         </div>
+        <?php
+    }
+
+    private static function render_smtp_settings(): void
+    {
+        $smtp = (new SmtpService())->get_public_settings();
+        $smtp_key = SmtpService::OPTION_KEY;
+        ?>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row">
+                    <label for="pr-smtp-host"><?php echo esc_html__('SMTP host', 'project-reviews'); ?></label>
+                </th>
+                <td>
+                    <input name="<?php echo esc_attr($smtp_key); ?>[host]"
+                        id="pr-smtp-host" type="text" class="regular-text"
+                        value="<?php echo esc_attr((string) $smtp['host']); ?>"
+                        placeholder="smtp.example.com" />
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-smtp-port"><?php echo esc_html__('Port', 'project-reviews'); ?></label>
+                </th>
+                <td>
+                    <input name="<?php echo esc_attr($smtp_key); ?>[port]"
+                        id="pr-smtp-port" type="number" min="1" max="65535" class="small-text"
+                        value="<?php echo esc_attr((string) $smtp['port']); ?>" />
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-smtp-encryption"><?php echo esc_html__('Encryption', 'project-reviews'); ?></label>
+                </th>
+                <td>
+                    <select name="<?php echo esc_attr($smtp_key); ?>[encryption]" id="pr-smtp-encryption">
+                        <option value="tls" <?php selected((string) $smtp['encryption'], 'tls'); ?>>TLS</option>
+                        <option value="ssl" <?php selected((string) $smtp['encryption'], 'ssl'); ?>>SSL</option>
+                        <option value="none" <?php selected((string) $smtp['encryption'], 'none'); ?>>
+                            <?php echo esc_html__('None', 'project-reviews'); ?>
+                        </option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-smtp-username"><?php echo esc_html__('Username', 'project-reviews'); ?></label>
+                </th>
+                <td>
+                    <input name="<?php echo esc_attr($smtp_key); ?>[username]"
+                        id="pr-smtp-username" type="text" class="regular-text" autocomplete="off"
+                        value="<?php echo esc_attr((string) $smtp['username']); ?>" />
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-smtp-password"><?php echo esc_html__('Password', 'project-reviews'); ?></label>
+                </th>
+                <td>
+                    <input name="<?php echo esc_attr($smtp_key); ?>[password]"
+                        id="pr-smtp-password" type="password" class="regular-text" autocomplete="new-password"
+                        value=""
+                        placeholder="<?php echo esc_attr(
+                            !empty($smtp['has_password'])
+                                ? __('Saved — leave blank to keep', 'project-reviews')
+                                : ''
+                        ); ?>" />
+                    <p class="description">
+                        <?php echo esc_html__('Stored encrypted. Leave blank to keep the current password.', 'project-reviews'); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="pr-smtp-from-email"><?php echo esc_html__('From email', 'project-reviews'); ?></label>
+                </th>
+                <td>
+                    <input name="<?php echo esc_attr($smtp_key); ?>[from_email]"
+                        id="pr-smtp-from-email" type="email" class="regular-text"
+                        value="<?php echo esc_attr((string) $smtp['from_email']); ?>" />
+                    <p class="description">
+                        <?php echo esc_html__(
+                            'Sender address for plugin emails. Should match the SMTP account to avoid spam filtering. The From name is taken from the branding settings above.',
+                            'project-reviews'
+                        ); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php echo esc_html__('Test', 'project-reviews'); ?></th>
+                <td>
+                    <button type="button" class="button button-secondary" id="pr-smtp-send-test">
+                        <?php echo esc_html__('Send test email', 'project-reviews'); ?>
+                    </button>
+                    <span id="pr-smtp-test-status" class="description" style="margin-left:8px;"></span>
+                    <p class="description">
+                        <?php echo esc_html__(
+                            'Sends a test message to your account email using the saved settings. Save changes first.',
+                            'project-reviews'
+                        ); ?>
+                    </p>
+                </td>
+            </tr>
+        </table>
         <?php
     }
 
@@ -626,6 +749,37 @@ jQuery(function ($) {
   $('#pr-letterhead-blocks').on('click', '.pr-letterhead-remove', function () {
     $(this).closest('.pr-letterhead-row').remove();
   });
+
+  var smtpTestBtn = $('#pr-smtp-send-test');
+  var smtpTestStatus = $('#pr-smtp-test-status');
+  if (smtpTestBtn.length && window.prAdminSettings && window.prAdminSettings.smtpTestUrl) {
+    smtpTestBtn.on('click', function () {
+      smtpTestBtn.prop('disabled', true);
+      smtpTestStatus.text('Sending test email…');
+      fetch(window.prAdminSettings.smtpTestUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'X-WP-Nonce': window.prAdminSettings.restNonce }
+      })
+        .then(function (response) {
+          return response.json().then(function (payload) {
+            if (!response.ok) {
+              throw new Error((payload && payload.message) || 'Test email failed.');
+            }
+            return payload;
+          });
+        })
+        .then(function (payload) {
+          smtpTestStatus.text('Test email sent to ' + (payload.to || 'your address') + '.');
+        })
+        .catch(function (err) {
+          smtpTestStatus.text(err.message || 'Test email failed.');
+        })
+        .finally(function () {
+          smtpTestBtn.prop('disabled', false);
+        });
+    });
+  }
 
   var backupBtn = $('#pr-download-full-backup');
   var backupStatus = $('#pr-backup-status');

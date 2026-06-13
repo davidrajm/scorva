@@ -62,8 +62,6 @@ final class SessionDeleteService
         }
 
         $title = trim((string) ($session['title'] ?? ''));
-        $reviewer_user_ids = $this->session_reviewer_user_ids($session_id);
-
         $this->audit->delete_scoped_rows_for_session($session_id);
 
         foreach ($this->reviews->list_for_session($session_id) as $review) {
@@ -86,12 +84,6 @@ final class SessionDeleteService
             }
         }
 
-        $this->wpdb->delete(
-            $this->wpdb->prefix . 'pr_session_reviewers',
-            ['session_id' => $session_id],
-            ['%d']
-        );
-
         SessionPanelReportSettings::delete($session_id);
 
         $this->audit->log(
@@ -105,39 +97,6 @@ final class SessionDeleteService
 
         $this->sessions->delete($session_id);
 
-        foreach ($reviewer_user_ids as $user_id) {
-            SessionReviewerAccountMeta::clear_account_disabled_meta_if_unused(
-                $this->wpdb,
-                $user_id
-            );
-        }
-
         return ['ok' => true, 'deleted' => true];
-    }
-
-    /**
-     * @return list<int>
-     */
-    private function session_reviewer_user_ids(int $session_id): array
-    {
-        $table = $this->wpdb->prefix . 'pr_session_reviewers';
-        $sql = $this->wpdb->prepare(
-            "SELECT DISTINCT user_id FROM {$table} WHERE session_id = %d",
-            $session_id
-        );
-        $ids = $this->wpdb->get_col($sql);
-        if (!is_array($ids)) {
-            return [];
-        }
-
-        $user_ids = [];
-        foreach ($ids as $id) {
-            $user_id = (int) $id;
-            if ($user_id > 0) {
-                $user_ids[] = $user_id;
-            }
-        }
-
-        return $user_ids;
     }
 }

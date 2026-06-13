@@ -49,8 +49,9 @@ final class Routes
 
         if (!is_user_logged_in()) {
             if ($app === 'reviewer') {
-                wp_safe_redirect(home_url('/reviews/'));
-                self::end_request();
+                // Token-portal reviewers have no WordPress account; the
+                // reviewer app handles token + password login client-side.
+                self::render_reviewer_shell();
 
                 return;
             }
@@ -137,7 +138,20 @@ final class Routes
                 ? home_url('/reviews/mark/')
                 : home_url('/reviews/');
 
+            $portal_token = '';
+            if ($app === 'reviewer' && isset($_GET['token'])) {
+                $raw_token = function_exists('wp_unslash')
+                    ? (string) wp_unslash((string) $_GET['token'])
+                    : (string) $_GET['token'];
+                $raw_token = trim($raw_token);
+                if (preg_match('/^[a-f0-9]{64}$/i', $raw_token) === 1) {
+                    $portal_token = $raw_token;
+                }
+            }
+
             $pr_app_data = [
+                'portalToken' => $portal_token,
+                'isWpUser' => is_user_logged_in(),
                 'restUrl' => rest_url(Rest_Bootstrap::NAMESPACE . '/'),
                 'nonce' => wp_create_nonce('wp_rest'),
                 'studentImportTemplateUrl' => plugins_url(

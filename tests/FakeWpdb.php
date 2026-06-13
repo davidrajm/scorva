@@ -22,6 +22,9 @@ final class FakeWpdb
     /** @var array<string, true> */
     private array $views = [];
 
+    /** @var array<string, array<string, true>> */
+    private array $table_indexes = [];
+
     /** @var list<string> */
     public array $queries = [];
 
@@ -376,6 +379,38 @@ final class FakeWpdb
         }
 
         if (preg_match(
+            '/ALTER TABLE (\S+) ADD COLUMN (token|password_hash|password_encrypted|credentials_sent_at) /',
+            $normalized,
+            $matches
+        ) === 1) {
+            $table = $matches[1];
+            $column = $matches[2];
+            if (!isset($this->table_column_defs[$table])) {
+                $this->table_column_defs[$table] = [];
+            }
+            if (!$this->has_column($table, $column)) {
+                $this->table_column_defs[$table][] = $column;
+                foreach ($this->tables[$table] ?? [] as $index => $row) {
+                    if (!array_key_exists($column, $row)) {
+                        $this->tables[$table][$index][$column] = null;
+                    }
+                }
+            }
+
+            return 1;
+        }
+
+        if (preg_match(
+            '/ALTER TABLE (\S+) ADD UNIQUE KEY (\S+) /',
+            $normalized,
+            $matches
+        ) === 1) {
+            $this->table_indexes[$matches[1]][$matches[2]] = true;
+
+            return 1;
+        }
+
+        if (preg_match(
             '/ALTER TABLE (\S+) ADD COLUMN name varchar\(255\)/',
             $normalized,
             $matches
@@ -530,6 +565,24 @@ final class FakeWpdb
             $reg_no = str_replace("''", "'", $matches[2]);
 
             return $this->find_by_column($matches[1], 'reg_no', $reg_no);
+        }
+
+        if (preg_match(
+            '/SELECT \* FROM (\S+) WHERE token = \'((?:[^\']|\'\')*)\'/',
+            $normalized,
+            $matches
+        ) === 1) {
+            $token = str_replace("''", "'", $matches[2]);
+
+            return $this->find_by_column($matches[1], 'token', $token);
+        }
+
+        if (preg_match(
+            '/^SELECT \* FROM (\S+) WHERE user_id = (\d+)$/',
+            $normalized,
+            $matches
+        ) === 1) {
+            return $this->find_by_column($matches[1], 'user_id', $matches[2]);
         }
 
         if (preg_match(
@@ -940,6 +993,19 @@ final class FakeWpdb
 
         if (preg_match('/SELECT \* FROM (\S+) ORDER BY/', $normalized, $matches) === 1) {
             return $this->filter_and_sort($matches[1], [], $normalized);
+        }
+
+        if (preg_match(
+            "/SHOW INDEX FROM (\S+) WHERE Key_name = '((?:[^']|'')*)'/",
+            $normalized,
+            $matches
+        ) === 1) {
+            $index = str_replace("''", "'", $matches[2]);
+            if (!empty($this->table_indexes[$matches[1]][$index])) {
+                return [['Key_name' => $index]];
+            }
+
+            return [];
         }
 
         if (preg_match(

@@ -1,0 +1,11 @@
+{
+	"permissions": {
+		"allow": [
+			"Bash(npm run build)",
+			"Bash(php vendor/bin/phpunit *)",
+			"Bash(composer dump-autoload *)",
+			"Bash(docker compose ps *)",
+			"Bash(docker compose logs *)"
+		]
+	}
+}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ProjectReviews\Tests;
 
 use PHPUnit\Framework\TestCase;
+use ProjectReviews\Repositories\PanelRepository;
 use ProjectReviews\Repositories\SessionRepository;
 use ProjectReviews\Rest_Session_Close;
 use WP_Error;
@@ -37,19 +38,13 @@ final class RestSessionCloseTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_reopen_returns_session_and_reenabled_ids(): void
+    public function test_reopen_returns_session(): void
     {
         $prefix = $this->wpdb->prefix;
         $this->wpdb->insert("{$prefix}pr_sessions", [
             'id' => 1,
             'title' => 'Closed REST',
             'status' => SessionRepository::STATUS_CLOSED,
-        ]);
-        $this->wpdb->insert("{$prefix}pr_session_reviewers", [
-            'session_id' => 1,
-            'user_id' => 42,
-            'provisioned_for_session' => 1,
-            'disabled_at' => '2026-01-01 00:00:00',
         ]);
 
         RestTestFixtures::login_with_cap(PR_CAP_CLOSE_SESSION);
@@ -62,7 +57,6 @@ final class RestSessionCloseTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertSame(SessionRepository::STATUS_ACTIVE, $result['session']['status'] ?? '');
-        $this->assertSame([42], $result['reenabled_user_ids']);
     }
 
     public function test_reopen_returns_400_when_not_closed(): void
@@ -87,29 +81,24 @@ final class RestSessionCloseTest extends TestCase
         $this->assertSame(400, $result->get_error_data()['status'] ?? 0);
     }
 
-    public function test_close_preview_includes_disabled_accounts(): void
+    public function test_close_preview_includes_credentialed_reviewers(): void
     {
-        $prefix = $this->wpdb->prefix;
-        $this->wpdb->insert("{$prefix}pr_sessions", [
-            'id' => 3,
-            'title' => 'Preview REST',
-            'status' => SessionRepository::STATUS_CLOSED,
-        ]);
-        $this->wpdb->insert("{$prefix}pr_session_reviewers", [
-            'session_id' => 3,
-            'user_id' => 99,
-            'provisioned_for_session' => 1,
-            'disabled_at' => '2026-01-01 00:00:00',
-        ]);
+        $sessions = new SessionRepository($this->wpdb);
+        $panels = new PanelRepository($this->wpdb);
+
+        $session_id = $sessions->create(['title' => 'Preview REST', 'status' => SessionRepository::STATUS_ACTIVE]);
+        $panel_id = $panels->create($session_id, 'Panel A');
+        $r_id = $panels->add_reviewer($panel_id, ['email' => 'r@example.com', 'name' => 'R']);
+        $panels->update_reviewer($r_id, ['token' => str_repeat('b', 64), 'password_hash' => 'hash_b']);
 
         RestTestFixtures::login_with_cap(PR_CAP_CLOSE_SESSION);
 
-        $request = new WP_REST_Request('GET', '/project-reviews/v1/sessions/3/close-preview');
-        $request->set_param('id', 3);
+        $request = new WP_REST_Request('GET', "/project-reviews/v1/sessions/{$session_id}/close-preview");
+        $request->set_param('id', $session_id);
 
         $result = Rest_Session_Close::close_preview($request);
 
         $this->assertIsArray($result);
-        $this->assertSame(1, $result['disabled_accounts']);
+        $this->assertSame(1, $result['credentialed_reviewers']);
     }
 }

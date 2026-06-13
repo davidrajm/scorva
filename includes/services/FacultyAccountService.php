@@ -194,9 +194,6 @@ final class FacultyAccountService
                 $email,
                 $name,
                 $emp_id,
-                false,
-                null,
-                null,
                 [
                     'designation' => trim((string) ($row['designation'] ?? '')),
                     'gender' => trim((string) ($row['gender'] ?? '')),
@@ -279,9 +276,6 @@ final class FacultyAccountService
                 $email,
                 (string) ($row['name'] ?? ''),
                 $emp_id,
-                false,
-                null,
-                null,
                 [
                     'designation' => (string) ($row['designation'] ?? ''),
                     'gender' => (string) ($row['gender'] ?? ''),

@@ -42,6 +42,8 @@ final class Rest_Bootstrap
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-panel-reports.php';
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-session-panel-report-settings.php';
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-backup.php';
+        require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-smtp.php';
+        require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-portal.php';
         Rest_Students::register_routes();
         Rest_Faculty_Accounts::register_routes();
         Rest_Sessions::register_routes();
@@ -61,6 +63,8 @@ final class Rest_Bootstrap
         Rest_Panel_Reports::register_routes();
         Rest_Session_Panel_Report_Settings::register_routes();
         Rest_Backup::register_routes();
+        Rest_Smtp::register_routes();
+        Rest_Portal::register_routes();
     }
 
     /**

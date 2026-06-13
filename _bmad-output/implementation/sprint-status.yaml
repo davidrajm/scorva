@@ -1,5 +1,6 @@
 # generated: 2026-05-16
-# last_updated: 2026-05-25
+# last_updated: 2026-06-13
+# Story 25-1 ready-for-dev 2026-06-13 — reviewer credentials UX: per-row loading/feedback, view credentials modal, regenerate all with typed confirm
 # Story 22-1 ready-for-dev 2026-05-25 — Reviews link in site menu on activation; cross-theme nav bootstrap
 # Story 21-1 ready-for-dev 2026-05-25 — coordinator mark override + shuttle marking (UI, cap, distinct from flagged)
 # Story 20-1 ready-for-dev 2026-05-24 — configurable app branding; default Scorva: The Review Management System
@@ -76,7 +77,7 @@
 #   - done: Retrospective has been completed
 
 generated: '2026-05-16'
-last_updated: '2026-05-25'  # Story 21-1 review — coordinator mark override + shuttle marking
+last_updated: '2026-06-13'  # Story 25-1 done — reviewer credentials UX: per-row loading, view link modal, typed resend-all confirm
 # Story 5-7 ready-for-dev 2026-05-17
 # Story 7-3 validated 2026-05-17 — session nav + RestReportsTest + build
 # Story 4-6 added 2026-05-17 — per-review rubric wizard + lock on has_marks
@@ -238,3 +239,6 @@ development_status:
   epic-22: in-progress
   22-1-reviews-theme-menu-on-activation: review
   epic-22-retrospective: optional
+  epic-25: in-progress
+  25-1-reviewer-credentials-ux-enhancements: done
+  epic-25-retrospective: optional

@@ -11,8 +11,10 @@ final class Rest_Reviewer_Unfreeze_Requests
 {
     public static function register_routes(): void
     {
-        $read = Rest_Auth::require_cap(PR_CAP_ENTER_MARKS);
-        $write = Rest_Auth::with_rest_nonce($read);
+        $read = Rest_Auth::allow_reviewer_session(Rest_Auth::require_cap(PR_CAP_ENTER_MARKS));
+        $write = Rest_Auth::allow_reviewer_session(
+            Rest_Auth::with_rest_nonce(Rest_Auth::require_cap(PR_CAP_ENTER_MARKS))
+        );
 
         register_rest_route(
             Rest_Bootstrap::NAMESPACE,
@@ -48,7 +50,7 @@ final class Rest_Reviewer_Unfreeze_Requests
         $repo = new UnfreezeRequestRepository();
 
         return [
-            'requests' => $repo->list_pending_for_panel_head((int) get_current_user_id()),
+            'requests' => $repo->list_pending_for_panel_head(Rest_Auth::current_actor_id()),
         ];
     }
 
@@ -59,6 +61,6 @@ final class Rest_Reviewer_Unfreeze_Requests
     {
         $id = (int) $request->get_param('id');
 
-        return (new MarkService())->grant_unfreeze($id, (int) get_current_user_id());
+        return (new MarkService())->grant_unfreeze($id, Rest_Auth::current_actor_id());
     }
 }

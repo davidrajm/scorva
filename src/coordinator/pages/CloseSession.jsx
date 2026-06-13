@@ -41,11 +41,9 @@ export function CloseSession() {
 	const [ loading, setLoading ] = useState( true );
 	const [ dialogOpen, setDialogOpen ] = useState( false );
 	const [ reopenDialogOpen, setReopenDialogOpen ] = useState( false );
-	const [ alsoDisable, setAlsoDisable ] = useState( false );
 	const [ closing, setClosing ] = useState( false );
 	const [ reopening, setReopening ] = useState( false );
 	const [ success, setSuccess ] = useState( '' );
-	const [ disabledCount, setDisabledCount ] = useState( null );
 	const [ error, setError ] = useState( '' );
 	const [ backupLoading, setBackupLoading ] = useState( false );
 	const [ backupError, setBackupError ] = useState( '' );
@@ -107,13 +105,8 @@ export function CloseSession() {
 		setError( '' );
 		setReopening( true );
 		try {
-			const result = await post( `sessions/${ id }/reopen` );
-			const count = result?.reenabled_user_ids?.length ?? 0;
-			setSuccess(
-				count > 0
-					? `Project reopened. ${ count } account${ count === 1 ? '' : 's' } re-enabled.`
-					: 'Project reopened successfully.'
-			);
+			await post( `sessions/${ id }/reopen` );
+			setSuccess( 'Project reopened. Reviewer portal access is restored.' );
 			setReopenDialogOpen( false );
 			await loadPreview();
 		} catch {
@@ -208,18 +201,9 @@ export function CloseSession() {
 		setError( '' );
 		setClosing( true );
 		try {
-			const result = await post( `sessions/${ id }/close`, {
-				also_disable_coordinators: alsoDisable,
-			} );
-			const count = result?.disabled_user_ids?.length ?? 0;
-			setDisabledCount( count );
-			setSuccess(
-				count > 0
-					? `Project closed. ${ count } provisioned account${ count === 1 ? '' : 's' } disabled.`
-					: 'Project closed successfully.'
-			);
+			await post( `sessions/${ id }/close` );
+			setSuccess( 'Project closed. Reviewer portal access is suspended.' );
 			setDialogOpen( false );
-			setAlsoDisable( false );
 			await loadPreview();
 		} catch {
 			setError( 'Failed to close project.' );
@@ -229,33 +213,18 @@ export function CloseSession() {
 	};
 
 	const isClosed = preview?.status === 'closed';
-	const disabledAccounts = preview?.disabled_accounts ?? 0;
+	const credentialedReviewers = preview?.credentialed_reviewers ?? 0;
 
 	const consequences = [
 		'Project status will change to closed.',
-		'Reviewers will no longer be able to submit marks.',
-		`${ preview?.provisioned_users ?? 0 } provisioned reviewer account${
-			preview?.provisioned_users === 1 ? '' : 's'
-		} for this project will be disabled.`,
-		...( alsoDisable
-			? [
-					'Coordinator-capable users linked to this project will also be disabled.',
-				]
-			: [
-					'Coordinator-capable users stay active unless you opt in below.',
-				] ),
+		`Reviewer portal access will be suspended — ${ credentialedReviewers } credentialed reviewer${ credentialedReviewers === 1 ? '' : 's' } will be blocked from logging in.`,
+		'Marks already submitted are preserved.',
 	];
 
 	const reopenConsequences = [
 		'Project status will return to active (or draft if it was draft before close).',
+		'Reviewer portal access will be restored — credentialed reviewers can log in again.',
 		'Marking can resume where rubric, assignment, and freeze rules allow edits.',
-		...( disabledAccounts > 0
-			? [
-					`${ disabledAccounts } disabled account${
-						disabledAccounts === 1 ? '' : 's'
-					} for this project will be re-enabled.`,
-				]
-			: [ 'No disabled accounts are linked to this project.' ] ),
 		'Does not unlock coordinator marks lock or reviewer submitted scores.',
 	];
 
@@ -265,8 +234,8 @@ export function CloseSession() {
 				title="Close project"
 				description={
 					sessionTitle
-						? `End marking for “${ sessionTitle }” and disable provisioned reviewer accounts.`
-						: 'End marking and disable provisioned reviewer accounts.'
+						? `End marking for “${ sessionTitle }” and suspend reviewer portal access.`
+						: 'End marking and suspend reviewer portal access.'
 				}
 				actions={
 					preview?.status ? (
@@ -303,17 +272,12 @@ export function CloseSession() {
 					</h2>
 					<div className="space-y-4 rounded-md border border-border bg-surface-raised p-6">
 						<p className="text-sm text-text">
-							This project is closed. Marking is locked and provisioned
-							reviewer accounts may be disabled.
+							This project is closed. Marking is locked and reviewer portal access is suspended.
 						</p>
 						<dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
 							<dt className="text-text-muted">Status</dt>
 							<dd>
 								<StatusChip variant={ preview.status } />
-							</dd>
-							<dt className="text-text-muted">Disabled accounts</dt>
-							<dd className="font-medium text-text">
-								{ disabledAccounts }
 							</dd>
 						</dl>
 						{ ! canCloseProject ? (
@@ -414,13 +378,13 @@ export function CloseSession() {
 									) : null }
 								</dd>
 								<dt className="text-text-muted">
-									Provisioned accounts
+									Credentialed reviewers
 								</dt>
 								<dd className="font-medium text-text">
-									{ preview.provisioned_users }
+									{ preview.credentialed_reviewers }
 									<span className="mt-1 block text-xs font-normal text-text-muted">
-										WordPress accounts created for this
-										project will be disabled.
+										Portal access is suspended when the
+										project is closed.
 									</span>
 								</dd>
 							</dl>
@@ -533,7 +497,7 @@ export function CloseSession() {
 				consequences={ [
 					'All entered marks and derived scores for this project will be permanently removed.',
 					'Student roster, panels, review rounds, rubrics, assignments, freezes, and project-scoped audit will be deleted.',
-					'Disabled reviewer accounts for this project only will be re-enabled when no other closed project still disables them.',
+					'Reviewer portal credentials for this project are permanently removed.',
 					'WordPress user accounts are not deleted.',
 				] }
 				confirmLabel={
@@ -572,31 +536,9 @@ export function CloseSession() {
 				confirmLabel={ closing ? 'Closing…' : 'Close project' }
 				confirmVariant="destructive"
 				confirmDisabled={ closing }
-				onCancel={ () => {
-					setDialogOpen( false );
-					setAlsoDisable( false );
-				} }
+				onCancel={ () => setDialogOpen( false ) }
 				onConfirm={ handleClose }
-			>
-				<label className="flex items-start gap-2 text-sm text-text">
-					<input
-						type="checkbox"
-						className="mt-0.5"
-						checked={ alsoDisable }
-						onChange={ ( e ) => setAlsoDisable( e.target.checked ) }
-					/>
-					<span>Also disable coordinator-capable users</span>
-				</label>
-				{ alsoDisable ? (
-					<div className="mt-3">
-						<Notice variant="warning">
-							This will disable accounts with project management
-							capability. Use only when you intend to lock out
-							coordinators for this project.
-						</Notice>
-					</div>
-				) : null }
-			</ConfirmDialog>
+			/>
 		</>
 	);
 }

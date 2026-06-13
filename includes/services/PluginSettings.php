@@ -186,6 +186,29 @@ final class PluginSettings
         return function_exists('wp_login_url') ? wp_login_url() : '/wp-login.php';
     }
 
+    /**
+     * Reviewer portal entry URL. Reviewers authenticate here with their
+     * emailed token + password instead of a WordPress login.
+     */
+    public static function portal_url(): string
+    {
+        return function_exists('home_url') ? home_url('/reviews/mark/') : '/reviews/mark/';
+    }
+
+    public static function portal_url_with_token(string $token): string
+    {
+        $url = self::portal_url();
+        if ($token === '') {
+            return $url;
+        }
+
+        if (function_exists('add_query_arg')) {
+            return add_query_arg('token', $token, $url);
+        }
+
+        return $url . (str_contains($url, '?') ? '&' : '?') . 'token=' . rawurlencode($token);
+    }
+
     public static function login_url_with_redirect(string $redirect_to): string
     {
         $login = self::login_url();

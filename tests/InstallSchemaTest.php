@@ -43,7 +43,6 @@ final class InstallSchemaTest extends TestCase
             'pr_review_panel_reviewers',
             'pr_rubric_criteria', 'pr_review_weights',
             'pr_reviewer_weights', 'pr_marks', 'pr_mark_audit', 'pr_unfreeze_requests',
-            'pr_session_reviewers',
         ];
         foreach ($tables as $table) {
             $this->assertStringContainsString($table, $sql, "Missing table: {$table}");

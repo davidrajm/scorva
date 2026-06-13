@@ -5,9 +5,70 @@ declare(strict_types=1);
 namespace ProjectReviews;
 
 use ProjectReviews\Services\PluginSettings;
+use ProjectReviews\Services\ReviewerSessionService;
 
 final class Rest_Auth
 {
+    /**
+     * Permission callback for reviewer-portal endpoints: requires a valid
+     * token-portal session cookie (no WordPress login, no REST nonce).
+     */
+    public static function require_reviewer_session(): callable
+    {
+        return static function (): bool|\WP_Error {
+            if (self::reviewer_session_context() !== null) {
+                return true;
+            }
+
+            return new \WP_Error(
+                'pr_portal_unauthorized',
+                __('Your session has expired. Open your review link and enter your password again.', 'project-reviews'),
+                ['status' => 401]
+            );
+        };
+    }
+
+    /**
+     * Validated portal-session context for the current request, or null.
+     *
+     * @return array{reviewer_id: int, user_id: int, session_id: int, created_at: int}|null
+     */
+    public static function reviewer_session_context(): ?array
+    {
+        return (new ReviewerSessionService())->get_context();
+    }
+
+    /**
+     * Wrap a permission callback so a valid token-portal session also passes.
+     * Portal reviewers have no WordPress login, capabilities, or REST nonce.
+     *
+     * @param callable(\WP_REST_Request=): (bool|\WP_Error) $permission
+     */
+    public static function allow_reviewer_session(callable $permission): callable
+    {
+        return static function (\WP_REST_Request $request) use ($permission): bool|\WP_Error {
+            if (self::reviewer_session_context() !== null) {
+                return true;
+            }
+
+            return $permission($request);
+        };
+    }
+
+    /**
+     * Acting reviewer identity for marks and assignments: the portal
+     * session's roster identity when present, otherwise the WordPress user.
+     */
+    public static function current_actor_id(): int
+    {
+        $context = self::reviewer_session_context();
+        if ($context !== null && $context['user_id'] > 0) {
+            return $context['user_id'];
+        }
+
+        return function_exists('get_current_user_id') ? (int) get_current_user_id() : 0;
+    }
+
     public static function require_logged_in(): callable
     {
         return static function (): bool|\WP_Error {
@@ -17,22 +78,6 @@ final class Rest_Auth
                     __('You must be logged in to access this endpoint.', 'project-reviews'),
                     ['status' => 401]
                 );
-            }
-
-            $user_id = function_exists('get_current_user_id') ? (int) get_current_user_id() : 0;
-            if ($user_id > 0 && function_exists('get_user_meta')) {
-                $disabled = get_user_meta($user_id, 'pr_account_disabled', true);
-                if ($disabled === '1' || $disabled === 'yes' || $disabled === true) {
-                    return new \WP_Error(
-                        'pr_account_disabled',
-                        sprintf(
-                            /* translators: %s: application display name */
-                            __('This account has been disabled for %s.', 'project-reviews'),
-                            PluginSettings::app_display_name()
-                        ),
-                        ['status' => 403]
-                    );
-                }
             }
 
             return true;

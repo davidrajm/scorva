@@ -18,7 +18,7 @@ final class Rest_Reviewer_Assignments
 {
     public static function register_routes(): void
     {
-        $read = Rest_Auth::require_cap(PR_CAP_ENTER_MARKS);
+        $read = Rest_Auth::allow_reviewer_session(Rest_Auth::require_cap(PR_CAP_ENTER_MARKS));
 
         register_rest_route(
             Rest_Bootstrap::NAMESPACE,
@@ -50,7 +50,9 @@ final class Rest_Reviewer_Assignments
             ]
         );
 
-        $write = Rest_Auth::with_rest_nonce($read);
+        $write = Rest_Auth::allow_reviewer_session(
+            Rest_Auth::with_rest_nonce(Rest_Auth::require_cap(PR_CAP_ENTER_MARKS))
+        );
 
         register_rest_route(
             Rest_Bootstrap::NAMESPACE,
@@ -80,7 +82,7 @@ final class Rest_Reviewer_Assignments
     {
         unset($request);
 
-        $user_id = (int) get_current_user_id();
+        $user_id = Rest_Auth::current_actor_id();
         $sessions = new SessionRepository();
         $assignments_repo = new ReviewAssignmentRepository();
         $reviews = new ReviewRepository();
@@ -163,7 +165,7 @@ final class Rest_Reviewer_Assignments
         $session_id = (int) $request->get_param('session_id');
         $review_id = (int) $request->get_param('review_id');
         $panel_id = (int) $request->get_param('panel_id');
-        $user_id = (int) get_current_user_id();
+        $user_id = Rest_Auth::current_actor_id();
 
         $sessions = new SessionRepository();
         $session = $sessions->find_by_id($session_id);
@@ -388,7 +390,7 @@ final class Rest_Reviewer_Assignments
             $session_id,
             $review_id,
             $panel_id,
-            (int) get_current_user_id()
+            Rest_Auth::current_actor_id()
         );
         if ($existing !== null) {
             return [
@@ -405,7 +407,7 @@ final class Rest_Reviewer_Assignments
             $session_id,
             $review_id,
             $panel_id,
-            (int) get_current_user_id(),
+            Rest_Auth::current_actor_id(),
             $reason
         );
     }
@@ -434,7 +436,7 @@ final class Rest_Reviewer_Assignments
             $session_id,
             $review_id,
             $panel_id,
-            (int) get_current_user_id()
+            Rest_Auth::current_actor_id()
         );
     }
 

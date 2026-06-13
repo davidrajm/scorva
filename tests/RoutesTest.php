@@ -74,7 +74,7 @@ final class RoutesTest extends TestCase
         $this->assertStringContainsString('templates/app-shell.php', (string) $GLOBALS['pr_test_template_included']);
     }
 
-    public function test_guest_reviewer_route_redirects_to_landing(): void
+    public function test_guest_reviewer_route_renders_reviewer_shell_for_token_portal(): void
     {
         $GLOBALS['pr_test_query_var'] = 'reviewer';
         $GLOBALS['pr_test_current_user_id'] = 0;
@@ -82,8 +82,8 @@ final class RoutesTest extends TestCase
         Routes::handle_template();
 
         $this->assertFalse($GLOBALS['pr_test_auth_redirect_called']);
-        $this->assertSame(home_url('/reviews/'), $GLOBALS['pr_test_redirect_url']);
-        $this->assertNull($GLOBALS['pr_test_template_included']);
+        $this->assertNull($GLOBALS['pr_test_redirect_url']);
+        $this->assertSame('reviewer', $GLOBALS['pr_test_template_app']);
     }
 
     public function test_guest_coordinator_deep_path_redirects_to_landing(): void

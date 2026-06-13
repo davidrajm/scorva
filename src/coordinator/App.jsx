@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect } from '@wordpress/element';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { AppShell } from '../shared/AppShell';
 import { configureApi } from '../shared/api';
-import { RouteFallback } from '../shared/components';
+import { RouteFallback, ToastProvider } from '../shared/components';
 import { CoordinatorNav } from './CoordinatorNav';
 import { CoordinatorWorkspaceTopNav } from '../shared/components/WorkspaceTopNav';
 
@@ -66,6 +66,7 @@ export function CoordinatorApp() {
 	}, [] );
 
 	return (
+		<ToastProvider>
 		<HashRouter>
 			<AppShell
 				variant="coordinator"
@@ -164,5 +165,6 @@ export function CoordinatorApp() {
 				</Routes>
 			</AppShell>
 		</HashRouter>
+		</ToastProvider>
 	);
 }

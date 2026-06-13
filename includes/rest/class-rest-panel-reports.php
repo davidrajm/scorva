@@ -10,8 +10,10 @@ final class Rest_Panel_Reports
 {
     public static function register_routes(): void
     {
-        $read = Rest_Auth::require_cap(PR_CAP_ENTER_MARKS);
-        $write = Rest_Auth::with_rest_nonce($read);
+        $read = Rest_Auth::allow_reviewer_session(Rest_Auth::require_cap(PR_CAP_ENTER_MARKS));
+        $write = Rest_Auth::allow_reviewer_session(
+            Rest_Auth::with_rest_nonce(Rest_Auth::require_cap(PR_CAP_ENTER_MARKS))
+        );
 
         register_rest_route(
             Rest_Bootstrap::NAMESPACE,
@@ -63,7 +65,7 @@ final class Rest_Panel_Reports
             (int) $request->get_param('session_id'),
             (int) $request->get_param('review_id'),
             (int) $request->get_param('panel_id'),
-            (int) get_current_user_id()
+            Rest_Auth::current_actor_id()
         );
     }
 
@@ -76,7 +78,7 @@ final class Rest_Panel_Reports
             (int) $request->get_param('session_id'),
             (int) $request->get_param('review_id'),
             (int) $request->get_param('panel_id'),
-            (int) get_current_user_id()
+            Rest_Auth::current_actor_id()
         );
 
         if ($result instanceof \WP_Error) {
@@ -99,7 +101,7 @@ final class Rest_Panel_Reports
             (int) $request->get_param('session_id'),
             (int) $request->get_param('review_id'),
             (int) $request->get_param('panel_id'),
-            (int) get_current_user_id()
+            Rest_Auth::current_actor_id()
         );
     }
 
@@ -117,7 +119,7 @@ final class Rest_Panel_Reports
             (int) $request->get_param('session_id'),
             (int) $request->get_param('review_id'),
             (int) $request->get_param('panel_id'),
-            (int) get_current_user_id(),
+            Rest_Auth::current_actor_id(),
             (string) ($body['reason'] ?? '')
         );
     }

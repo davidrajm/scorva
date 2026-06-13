@@ -559,6 +559,24 @@ final class ReportQueryService
         if ($user_id <= 0) {
             return '';
         }
+
+        // Token-portal reviewers have no WordPress account; their identity
+        // is the roster row, so the roster name must win over get_userdata.
+        $roster_table = $this->wpdb->prefix . 'pr_panel_reviewers';
+        $row = $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$roster_table} WHERE user_id = %d",
+                $user_id
+            ),
+            'ARRAY_A'
+        );
+        if (is_array($row)) {
+            $name = trim((string) ($row['name'] ?? ''));
+            if ($name !== '') {
+                return $name;
+            }
+        }
+
         if (function_exists('get_userdata')) {
             $user = get_userdata($user_id);
             if ($user !== null && !empty($user->display_name)) {

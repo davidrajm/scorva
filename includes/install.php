@@ -27,7 +27,6 @@ final class Install
             self::table_marks($prefix, $charset_collate),
             self::table_mark_audit($prefix, $charset_collate),
             self::table_unfreeze_requests($prefix, $charset_collate),
-            self::table_session_reviewers($prefix, $charset_collate),
         ];
 
         return implode("\n", $tables);
@@ -92,6 +91,44 @@ final class Install
         self::ensure_panel_unfreeze_requests_table($wpdb);
         self::backfill_review_assignments($wpdb);
         self::backfill_missing_review_panel_reviewers($wpdb);
+        self::ensure_reviewer_credentials_columns($wpdb);
+    }
+
+    /**
+     * Token-portal credentials on panel reviewers (token, bcrypt hash,
+     * encrypted copy for resend, sent timestamp).
+     *
+     * @return bool True when all credential columns exist after this call.
+     */
+    public static function ensure_reviewer_credentials_columns(object $wpdb): bool
+    {
+        $table = $wpdb->prefix . 'pr_panel_reviewers';
+        if (!self::table_exists($wpdb, $table)) {
+            return false;
+        }
+
+        $columns = [
+            'token' => "varchar(64) DEFAULT NULL",
+            'password_hash' => "varchar(255) DEFAULT NULL",
+            'password_encrypted' => "text DEFAULT NULL",
+            'credentials_sent_at' => "datetime DEFAULT NULL",
+        ];
+
+        $ok = true;
+        $previous = 'is_panel_head';
+        foreach ($columns as $column => $definition) {
+            if (!self::column_exists($wpdb, $table, $column)) {
+                $wpdb->query("ALTER TABLE {$table} ADD COLUMN {$column} {$definition} AFTER {$previous}");
+                $ok = self::column_exists($wpdb, $table, $column) && $ok;
+            }
+            $previous = $column;
+        }
+
+        if (self::column_exists($wpdb, $table, 'token') && !self::index_exists($wpdb, $table, 'token')) {
+            $wpdb->query("ALTER TABLE {$table} ADD UNIQUE KEY token (token)");
+        }
+
+        return $ok;
     }
 
     /**
@@ -235,6 +272,15 @@ INNER JOIN {$students} s ON s.id = m.student_id";
         return is_array($row) && $row !== [];
     }
 
+    private static function index_exists(object $wpdb, string $table, string $index): bool
+    {
+        $rows = $wpdb->get_results(
+            $wpdb->prepare("SHOW INDEX FROM {$table} WHERE Key_name = %s", $index)
+        );
+
+        return is_array($rows) && $rows !== [];
+    }
+
     private static function view_exists(object $wpdb, string $view): bool
     {
         $rows = $wpdb->get_results(
@@ -345,7 +391,12 @@ INNER JOIN {$students} s ON s.id = m.student_id";
             user_id bigint(20) unsigned DEFAULT NULL,
             weight decimal(10,4) NOT NULL DEFAULT 1.0000,
             is_panel_head tinyint(1) NOT NULL DEFAULT 0,
+            token varchar(64) DEFAULT NULL,
+            password_hash varchar(255) DEFAULT NULL,
+            password_encrypted text DEFAULT NULL,
+            credentials_sent_at datetime DEFAULT NULL,
             PRIMARY KEY  (id),
+            UNIQUE KEY token (token),
             KEY panel_id (panel_id),
             KEY user_id (user_id)
         ) {$charset_collate};";

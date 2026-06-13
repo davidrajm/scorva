@@ -11,7 +11,7 @@ final class Rest_Marks
 {
     public static function register_routes(): void
     {
-        $read_marks = static function (): bool|\WP_Error {
+        $read_marks = Rest_Auth::allow_reviewer_session(static function (): bool|\WP_Error {
             $logged_in = Rest_Auth::require_logged_in()();
             if ($logged_in instanceof \WP_Error) {
                 return $logged_in;
@@ -26,8 +26,10 @@ final class Rest_Marks
                 __('You do not have permission to view marks.', 'project-reviews'),
                 ['status' => 403]
             );
-        };
-        $write_marks = Rest_Auth::with_rest_nonce(Rest_Auth::require_cap(PR_CAP_ENTER_MARKS));
+        });
+        $write_marks = Rest_Auth::allow_reviewer_session(
+            Rest_Auth::with_rest_nonce(Rest_Auth::require_cap(PR_CAP_ENTER_MARKS))
+        );
         $override = Rest_Auth::with_rest_nonce(Rest_Auth::require_cap(PR_CAP_OVERRIDE_MARKS));
         $manage_sessions = Rest_Auth::with_rest_nonce(Rest_Auth::require_cap(PR_CAP_MANAGE_SESSIONS));
 
@@ -77,8 +79,10 @@ final class Rest_Marks
         $session_id = (int) $request->get_param('session_id');
         $review_id = (int) $request->get_param('review_id');
         $student_id = (int) $request->get_param('student_id');
-        $actor = function_exists('get_current_user_id') ? (int) get_current_user_id() : 0;
-        $coordinator = function_exists('current_user_can') && current_user_can(PR_CAP_MANAGE_SESSIONS);
+        $actor = Rest_Auth::current_actor_id();
+        $coordinator = Rest_Auth::reviewer_session_context() === null
+            && function_exists('current_user_can')
+            && current_user_can(PR_CAP_MANAGE_SESSIONS);
 
         return (new MarkService())->get_marks($session_id, $review_id, $student_id, $actor, $coordinator);
     }
@@ -91,7 +95,7 @@ final class Rest_Marks
         $session_id = (int) $request->get_param('session_id');
         $review_id = (int) $request->get_param('review_id');
         $student_id = (int) $request->get_param('student_id');
-        $actor = function_exists('get_current_user_id') ? (int) get_current_user_id() : 0;
+        $actor = Rest_Auth::current_actor_id();
 
         $params = $request->get_json_params();
         if (!is_array($params)) {

@@ -88,7 +88,6 @@ final class Rest_Session_Close
 
         return [
             'session' => $result['session'] ?? null,
-            'disabled_user_ids' => $result['disabled_user_ids'] ?? [],
         ];
     }
 
@@ -109,7 +108,6 @@ final class Rest_Session_Close
 
         return [
             'session' => $result['session'] ?? null,
-            'reenabled_user_ids' => $result['reenabled_user_ids'] ?? [],
         ];
     }
 }
