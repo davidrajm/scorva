@@ -23,7 +23,8 @@ if (!defined('PR_CAP_MANAGE_SESSIONS')) {
 final class Capabilities
 {
     public const ROLE_COORDINATOR = 'project_reviews_coordinator';
-    public const ROLE_REVIEWER = 'project_reviews_reviewer';
+    public const ROLE_HOD        = 'project_reviews_hod';
+    public const ROLE_REVIEWER   = 'project_reviews_reviewer';
 
     public static function all(): array
     {
@@ -55,6 +56,32 @@ final class Capabilities
         );
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function hod_caps(): array
+    {
+        return [
+            PR_CAP_OVERRIDE_MARKS,
+            PR_CAP_VIEW_REPORTS,
+            PR_CAP_CLOSE_SESSION,
+        ];
+    }
+
+    /**
+     * Maps each custom role slug to its default capability list.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function role_caps(): array
+    {
+        return [
+            self::ROLE_COORDINATOR => self::coordinator_caps(),
+            self::ROLE_HOD         => self::hod_caps(),
+            self::ROLE_REVIEWER    => [PR_CAP_ENTER_MARKS],
+        ];
+    }
+
     public static function apply_defaults(): void
     {
         if (!function_exists('get_option')) {
@@ -79,6 +106,16 @@ final class Capabilities
         if ($coordinator !== null) {
             foreach (self::coordinator_caps() as $cap) {
                 $coordinator->add_cap($cap);
+            }
+        }
+
+        $hod = get_role(self::ROLE_HOD);
+        if ($hod !== null) {
+            foreach (self::all() as $cap) {
+                $hod->remove_cap($cap);
+            }
+            foreach (self::hod_caps() as $cap) {
+                $hod->add_cap($cap);
             }
         }
 
@@ -208,7 +245,7 @@ final class Capabilities
             return;
         }
 
-        foreach ([self::ROLE_COORDINATOR, self::ROLE_REVIEWER] as $role_id) {
+        foreach ([self::ROLE_COORDINATOR, self::ROLE_HOD, self::ROLE_REVIEWER] as $role_id) {
             $counts = count_users(['role' => $role_id]);
             $total = 0;
             if (is_array($counts)) {
@@ -225,6 +262,7 @@ final class Capabilities
     {
         $short = PluginSettings::app_short_name();
         self::ensure_role(self::ROLE_COORDINATOR, $short . ' Coordinator');
+        self::ensure_role(self::ROLE_HOD, $short . ' HOD');
         self::ensure_role(self::ROLE_REVIEWER, $short . ' Reviewer');
     }
 

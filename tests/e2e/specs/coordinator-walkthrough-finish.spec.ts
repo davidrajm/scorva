@@ -38,6 +38,10 @@ test('coordinator walkthrough — progress, reports, close, delete', async ({ pa
 	ctx.reviewerDisplayName = saved!.reviewerDisplayName;
 	ctx.studentA = saved!.studentA;
 	ctx.studentB = saved!.studentB;
+	ctx.studentC = saved!.studentC;
+	ctx.studentD = saved!.studentD;
+	ctx.reviewerPortalUrl = saved!.reviewerPortalUrl;
+	ctx.reviewerPortalPassword = saved!.reviewerPortalPassword;
 
 	const onStep = (n: number, total: number, title: string, detail?: string) =>
 		test.step(`${n}/${total}: ${title}`, () =>

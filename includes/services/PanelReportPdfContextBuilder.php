@@ -304,7 +304,10 @@ final class PanelReportPdfContextBuilder
                 continue;
             }
             $attachment_id = (int) ($block['attachment_id'] ?? 0);
-            if ($attachment_id <= 0 || !function_exists('get_attached_file')) {
+            if ($attachment_id <= 0) {
+                break;
+            }
+            if (!function_exists('get_attached_file')) {
                 return '';
             }
 
@@ -312,6 +315,12 @@ final class PanelReportPdfContextBuilder
             if ($data_uri !== '') {
                 return $data_uri;
             }
+        }
+
+        // No per-session logo — fall back to the global institution logo.
+        $global_id = PluginSettings::global_logo_id();
+        if ($global_id > 0) {
+            return $this->attachment_sized_to_data_uri($global_id);
         }
 
         return '';

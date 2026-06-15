@@ -23,14 +23,17 @@ final class Rest_Smtp
 
     public static function send_test(\WP_REST_Request $request): \WP_REST_Response|\WP_Error
     {
-        unset($request);
+        $to = trim((string) ($request->get_param('to') ?? ''));
 
-        $user = wp_get_current_user();
-        $to = trim((string) ($user->user_email ?? ''));
+        if ($to === '' || !function_exists('is_email') || !is_email($to)) {
+            $user = wp_get_current_user();
+            $to   = trim((string) ($user->user_email ?? ''));
+        }
+
         if ($to === '') {
             return new \WP_Error(
                 'pr_smtp_no_recipient',
-                __('Your account has no email address to send the test to.', 'scorva'),
+                __('No recipient address. Provide a "to" address or ensure your admin account has an email.', 'scorva'),
                 ['status' => 400]
             );
         }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ProjectReviews;
 
 use ProjectReviews\Repositories\UnfreezeRequestRepository;
+use ProjectReviews\Services\MarkService;
 
 final class Rest_Unfreeze_Requests
 {
@@ -18,7 +19,9 @@ final class Rest_Unfreeze_Requests
             [
                 'methods' => 'GET',
                 'callback' => [self::class, 'list_requests'],
-                'permission_callback' => $manage,
+                'permission_callback' => Rest_Auth::with_rest_nonce(
+                    Rest_Auth::require_cap(PR_CAP_MANAGE_SESSIONS)
+                ),
             ]
         );
 
@@ -43,7 +46,7 @@ final class Rest_Unfreeze_Requests
             return ['requests' => []];
         }
 
-        return ['requests' => []];
+        return ['requests' => (new UnfreezeRequestRepository())->list_pending_for_coordinator()];
     }
 
     /**
@@ -51,10 +54,8 @@ final class Rest_Unfreeze_Requests
      */
     public static function grant_request(\WP_REST_Request $request): array|\WP_Error
     {
-        return new \WP_Error(
-            'use_panel_head_grant',
-            __('Reviewer score unfreeze must be approved by the panel coordinator in the reviewer app.', 'scorva'),
-            ['status' => 403]
-        );
+        $id = (int) $request->get_param('id');
+
+        return (new MarkService())->grant_unfreeze_by_coordinator($id, (int) get_current_user_id());
     }
 }

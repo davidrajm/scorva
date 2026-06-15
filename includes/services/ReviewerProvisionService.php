@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace ProjectReviews\Services;
 
-use ProjectReviews\Capabilities;
 use ProjectReviews\Emails\ReviewerCredentialsEmail;
 use ProjectReviews\Repositories\PanelRepository;
 use ProjectReviews\Repositories\ReviewAssignmentRepository;
@@ -26,56 +25,6 @@ final class ReviewerProvisionService
         $this->sessions = $sessions ?? new SessionRepository();
         $this->panels = $panels ?? new PanelRepository();
         $this->audit = $audit ?? new AuditService();
-    }
-
-    /**
-     * Create or update a WordPress account for the faculty directory.
-     * Panel reviewers never get WordPress accounts; this only backs the
-     * faculty accounts page (CSV import and directory sync).
-     *
-     * @param array{designation?: string, gender?: string} $meta
-     * @return array{user_id: int, created: bool}|\WP_Error
-     */
-    public function provision_reviewer_account(
-        string $email,
-        string $name,
-        ?string $emp_id = null,
-        array $meta = []
-    ): array|\WP_Error {
-        $email = strtolower(trim($email));
-        if ($email === '') {
-            return new \WP_Error(
-                'pr_reviewer_missing_email',
-                __('Email is required.', 'scorva'),
-                ['status' => 400]
-            );
-        }
-
-        $user_result = $this->resolve_or_create_user($email, trim($name));
-        if ($user_result instanceof \WP_Error) {
-            return $user_result;
-        }
-
-        $user_id = $user_result['user_id'];
-
-        if ($emp_id !== null && $emp_id !== '' && function_exists('update_user_meta')) {
-            update_user_meta($user_id, 'pr_faculty_emp_id', trim($emp_id));
-        }
-
-        $designation = trim((string) ($meta['designation'] ?? ''));
-        if ($designation !== '' && function_exists('update_user_meta')) {
-            update_user_meta($user_id, 'pr_faculty_designation', $designation);
-        }
-
-        $gender = trim((string) ($meta['gender'] ?? ''));
-        if ($gender !== '' && function_exists('update_user_meta')) {
-            update_user_meta($user_id, 'pr_faculty_gender', $gender);
-        }
-
-        return [
-            'user_id' => $user_id,
-            'created' => $user_result['created'],
-        ];
     }
 
     /**
@@ -408,106 +357,4 @@ final class ReviewerProvisionService
         ];
     }
 
-    /**
-     * @return array{user_id: int, created: bool}|\WP_Error
-     */
-    private function resolve_or_create_user(string $email, string $display_name): array|\WP_Error
-    {
-        if (!function_exists('get_user_by')) {
-            return new \WP_Error(
-                'pr_provision_unavailable',
-                __('User provisioning is not available.', 'scorva'),
-                ['status' => 500]
-            );
-        }
-
-        $existing = get_user_by('email', $email);
-        if ($existing !== null && $existing !== false) {
-            $user_id = (int) $existing->ID;
-            $this->ensure_reviewer_role($user_id);
-            if ($display_name !== '' && function_exists('wp_update_user')) {
-                wp_update_user(['ID' => $user_id, 'display_name' => $display_name]);
-            }
-
-            return [
-                'user_id' => $user_id,
-                'created' => false,
-            ];
-        }
-
-        if (!function_exists('wp_create_user') || !function_exists('wp_generate_password')) {
-            return new \WP_Error(
-                'pr_provision_unavailable',
-                __('User provisioning is not available.', 'scorva'),
-                ['status' => 500]
-            );
-        }
-
-        $password = wp_generate_password(16, true, true);
-        $username = sanitize_user(current(explode('@', $email)), true);
-        if ($username === '') {
-            $username = 'reviewer_' . wp_rand(1000, 9999);
-        }
-
-        $base = $username;
-        $suffix = 1;
-        while (get_user_by('login', $username) !== false) {
-            $username = $base . $suffix;
-            $suffix++;
-        }
-
-        $user_id = wp_create_user($username, $password, $email);
-        if (is_numeric($user_id)) {
-            $user_id = (int) $user_id;
-        }
-
-        if ($user_id instanceof \WP_Error) {
-            return $user_id;
-        }
-
-        if ($user_id <= 0) {
-            return new \WP_Error(
-                'pr_provision_failed',
-                __('Could not create reviewer account.', 'scorva'),
-                ['status' => 500]
-            );
-        }
-
-        if ($display_name !== '' && function_exists('wp_update_user')) {
-            wp_update_user(['ID' => $user_id, 'display_name' => $display_name]);
-        }
-
-        $this->ensure_reviewer_role($user_id);
-
-        if (function_exists('update_user_meta')) {
-            update_user_meta($user_id, 'pr_force_password_change', '1');
-        }
-
-        return [
-            'user_id' => $user_id,
-            'created' => true,
-        ];
-    }
-
-    private function ensure_reviewer_role(int $user_id): void
-    {
-        if (!function_exists('get_userdata') || !function_exists('get_role')) {
-            return;
-        }
-
-        $user = get_userdata($user_id);
-        if ($user === null || $user === false) {
-            return;
-        }
-
-        foreach (Capabilities::coordinator_caps() as $cap) {
-            if ($user->has_cap($cap)) {
-                return;
-            }
-        }
-
-        if (function_exists('get_role') && get_role(Capabilities::ROLE_REVIEWER) !== null) {
-            $user->add_role(Capabilities::ROLE_REVIEWER);
-        }
-    }
 }

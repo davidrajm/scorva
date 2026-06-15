@@ -92,6 +92,16 @@ export function MarkingGrid( { sessionId, reviewId, panelId } ) {
 		prevUnfreezePending.current = unfreezePending;
 	}, [ unfreezePending, reviewFrozen ] );
 
+	// Poll every 30 s while an unfreeze request is outstanding so the
+	// granted notice appears without a manual page reload.
+	useEffect( () => {
+		if ( ! unfreezePending ) {
+			return undefined;
+		}
+		const id = setInterval( load, 30_000 );
+		return () => clearInterval( id );
+	}, [ unfreezePending, load ] );
+
 	useEffect( () => {
 		if ( ! studentParam || students.length === 0 ) {
 			return;
@@ -136,6 +146,7 @@ export function MarkingGrid( { sessionId, reviewId, panelId } ) {
 			setUnfreezeOpen( false );
 			setUnfreezeReason( '' );
 			await load();
+			window.dispatchEvent( new Event( 'pr:unfreeze-changed' ) );
 		} catch ( err ) {
 			setUnfreezeError( mapMarkApiError( err ) );
 		} finally {
@@ -274,10 +285,28 @@ export function MarkingGrid( { sessionId, reviewId, panelId } ) {
 			) : null }
 
 			{ unfreezeGrantedNotice ? (
-				<div className="mb-4">
+				<div className="mb-4" role="status" aria-live="polite">
 					<Notice variant="success">
-						Your panel coordinator approved unfreeze. You can edit scores and
-						freeze again when ready.
+						<div className="flex items-start justify-between gap-3">
+							<div>
+								<p className="font-medium">Your unfreeze request was approved.</p>
+								<p className="mt-1 text-sm">
+									You can now edit your marks. Remember to freeze again when
+									you&apos;re done so your panel coordinator can include your
+									scores in the report.
+								</p>
+							</div>
+							<button
+								type="button"
+								// eslint-disable-next-line jsx-a11y/no-autofocus
+								autoFocus
+								aria-label="Dismiss notice"
+								className="shrink-0 rounded p-1 hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+								onClick={ () => setUnfreezeGrantedNotice( false ) }
+							>
+								<Icon name="dismiss" className="h-4 w-4" />
+							</button>
+						</div>
 					</Notice>
 				</div>
 			) : null }

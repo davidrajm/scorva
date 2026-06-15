@@ -33,6 +33,7 @@
 	--pr-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
 	--pr-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	--pr-layout-topbar-height: 56px;
+	--pr-layout-footer-height: 40px;
 	--pr-layout-sidebar-width: 240px;
 	--pr-layout-sidebar-collapsed-width: 56px;
 	--pr-layout-content-max-width: 1280px;
@@ -87,6 +88,22 @@ body.pr-app-shell {
 	padding: 0 24px;
 	background: var(--pr-color-surface-raised);
 	border-bottom: 1px solid var(--pr-color-border);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.pr-topbar::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: linear-gradient(
+		90deg,
+		var(--pr-color-primary) 0%,
+		var(--pr-color-primary-hover) 100%
+	);
+	pointer-events: none;
 }
 
 .pr-topbar-inner {
@@ -140,7 +157,24 @@ body.pr-app-shell {
 }
 
 .pr-user-identity {
-	max-width: min(280px, 40vw);
+	max-width: min(320px, 45vw);
+}
+
+.pr-user-avatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: var(--pr-color-primary);
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	user-select: none;
 }
 
 .pr-wordmark {
@@ -149,6 +183,60 @@ body.pr-app-shell {
 	font-weight: 600;
 	line-height: 1.35;
 	color: var(--pr-color-primary);
+}
+
+.pr-footer {
+	flex-shrink: 0;
+	height: var(--pr-layout-footer-height);
+	padding: 0 24px;
+	background: var(--pr-color-surface-raised);
+	border-top: 1px solid var(--pr-color-border);
+}
+
+.pr-footer-inner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	width: 100%;
+	height: 100%;
+	font-size: 12px;
+	color: var(--pr-color-text-muted);
+}
+
+.pr-footer-brand {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 500;
+	color: var(--pr-color-text-muted);
+}
+
+.pr-footer-link {
+	color: var(--pr-color-primary);
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.pr-footer-link:hover {
+	text-decoration: underline;
+}
+
+.pr-footer-version {
+	display: inline-flex;
+	align-items: center;
+	padding: 1px 7px;
+	border-radius: 9999px;
+	background: var(--pr-chip-active-bg);
+	color: var(--pr-color-primary);
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.01em;
+}
+
+.pr-footer-copy {
+	font-size: 11px;
+	color: var(--pr-color-text-muted);
 }
 
 .pr-body {
@@ -281,7 +369,6 @@ body.pr-app-shell {
 	z-index: 30;
 }
 
-#pr-root[data-app="reviewer"] .pr-body,
 #pr-root[data-app="landing"] .pr-body {
 	display: block;
 }
@@ -291,8 +378,22 @@ body.pr-app-shell {
 	max-width: 100%;
 }
 
-#pr-root[data-app="reviewer"] .pr-main {
-	max-width: 100%;
+/* Reviewer sidebar — mobile drawer (< lg); permanent at lg+ */
+#pr-root[data-app="reviewer"] .pr-sidebar {
+	position: fixed;
+	top: var(--pr-layout-topbar-height);
+	left: 0;
+	bottom: 0;
+	z-index: 90;
+	width: min(280px, 85vw);
+	flex-basis: auto;
+	transform: translateX(-100%);
+	transition: transform 0.2s ease;
+	box-shadow: var(--pr-shadow-card);
+}
+
+#pr-root[data-app="reviewer"] .pr-sidebar.pr-sidebar--drawer-open {
+	transform: translateX(0);
 }
 
 /* Styled scrollbars — shell + table regions */
@@ -521,6 +622,23 @@ body.pr-sidebar-resizing * {
 
 	#pr-root[data-app="coordinator"] .pr-sidebar-toolbar {
 		display: flex;
+	}
+
+	#pr-root[data-app="reviewer"] .pr-sidebar {
+		position: relative;
+		top: auto;
+		left: auto;
+		bottom: auto;
+		z-index: auto;
+		width: 240px;
+		flex: 0 0 240px;
+		transform: none;
+		box-shadow: none;
+		min-height: 100%;
+	}
+
+	#pr-root[data-app="reviewer"] .pr-sidebar.pr-sidebar--drawer-open {
+		transform: none;
 	}
 }
 

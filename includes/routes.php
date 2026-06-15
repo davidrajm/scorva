@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ProjectReviews;
 
+use ProjectReviews\Repositories\PanelRepository;
 use ProjectReviews\Services\PluginSettings;
 use ProjectReviews\Services\SmtpService;
 
@@ -167,12 +168,7 @@ final class Routes
                     'assets/csv/reviewers-import-template.csv',
                     PR_PLUGIN_FILE
                 ),
-                'facultyAccountsTemplateUrl' => plugins_url(
-                    'assets/csv/faculty-accounts-import-template.csv',
-                    PR_PLUGIN_FILE
-                ),
                 'canAssignReviewers' => current_user_can(PR_CAP_ASSIGN_REVIEWERS),
-                'facultyBridgeEnabled' => PluginSettings::faculty_bridge_enabled(),
                 'loginUrl' => PluginSettings::login_url_with_redirect($app_home),
                 'logoutUrl' => wp_logout_url($app_home),
                 'appHomeUrl' => $app_home,
@@ -180,6 +176,7 @@ final class Routes
                 'markingHomeUrl' => home_url('/reviews/mark/'),
                 'canAccessCoordinator' => Capabilities::user_has_coordinator_workspace_access(),
                 'canAccessMarking' => current_user_can(PR_CAP_ENTER_MARKS),
+                'isPanelHead' => is_user_logged_in() && (new PanelRepository())->is_user_any_panel_head((int) get_current_user_id()),
                 'canCloseProject' => current_user_can(PR_CAP_CLOSE_SESSION),
                 'canManageProjects' => current_user_can(PR_CAP_MANAGE_SESSIONS),
                 'smtpConfigured' => (new SmtpService())->is_configured(),
@@ -200,13 +197,15 @@ final class Routes
     }
 
     /**
-     * @return array{appDisplayName: string, appShortName: string}
+     * @return array{appDisplayName: string, appShortName: string, pluginVersion: string, pluginUri: string}
      */
     private static function branding_pr_app_data(): array
     {
         return [
             'appDisplayName' => PluginSettings::app_display_name(),
             'appShortName' => PluginSettings::app_short_name(),
+            'pluginVersion' => defined('PR_PLUGIN_VERSION') ? (string) PR_PLUGIN_VERSION : '',
+            'pluginUri' => 'https://github.com/davidrajm/scorva',
         ];
     }
 

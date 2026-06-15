@@ -15,13 +15,12 @@ final class ReviewerSessionService
 
     private const TRANSIENT_PREFIX = 'pr_rev_sess_';
 
-    private const TTL_SECONDS = 604800; // 7 days
-
     /**
      * Create a session and set the cookie. Returns the session key.
      */
     public function start(int $reviewer_id, int $user_id, int $session_id): string
     {
+        $ttl = PluginSettings::reviewer_session_ttl_seconds();
         $key = bin2hex(random_bytes(32));
         $payload = [
             'reviewer_id' => $reviewer_id,
@@ -31,10 +30,10 @@ final class ReviewerSessionService
         ];
 
         if (function_exists('set_transient')) {
-            set_transient(self::TRANSIENT_PREFIX . $key, $payload, self::TTL_SECONDS);
+            set_transient(self::TRANSIENT_PREFIX . $key, $payload, $ttl);
         }
 
-        $this->set_cookie($key, time() + self::TTL_SECONDS);
+        $this->set_cookie($key, time() + $ttl);
         $_COOKIE[self::COOKIE_NAME] = $key;
 
         return $key;

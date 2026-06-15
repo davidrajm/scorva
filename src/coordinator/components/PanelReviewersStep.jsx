@@ -7,6 +7,7 @@ import {
 } from '../../shared/reviewerTemplateCsv';
 import { Button, ConfirmDialog, Notice, useToast } from '../../shared/components';
 import { getDialogPortalRoot } from '../../shared/components/ConfirmDialog';
+import { Icon } from '../../shared/components/NavIcon';
 import { TableScrollWrapper } from '../../shared/TableScrollViewport';
 import { TABLE_BODY_ROW_SOFT } from '../../shared/tableStyles';
 import { CsvImportMapper } from './CsvImportMapper';
@@ -15,7 +16,14 @@ const TABLE_COL_COUNT = 6;
 
 function AccountStatus({ reviewer }) {
 	if (reviewer.has_credentials && reviewer.credentials_sent_at) {
-		const sentDate = String(reviewer.credentials_sent_at).slice(0, 10);
+		const raw = String(reviewer.credentials_sent_at);
+		const normalized = /[Z+]/.test(raw.slice(10)) ? raw : raw.replace(' ', 'T') + 'Z';
+		const dt = new Date(normalized);
+		const day = dt.getDate();
+		const month = dt.toLocaleString('en', { month: 'long' });
+		const year = dt.getFullYear();
+		const timeStr = dt.toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+		const sentDate = `${day} ${month}, ${year}, ${timeStr}`;
 		return (
 			<span
 				className="rounded bg-chip-active-bg px-1.5 py-0.5 text-xs text-chip-active-text"
@@ -246,14 +254,9 @@ function ReviewerTableRow({
 
 	const displayName = reviewer.name?.trim() || 'Unnamed reviewer';
 	const panelIdNum = Number(reviewer.panel_id);
-	const canBePanelHead = reviewer.has_credentials || Boolean(reviewer.user_id);
 
 	const handlePanelHeadToggle = async (event) => {
 		const checked = event.target.checked;
-		if (!canBePanelHead) {
-			return;
-		}
-
 		const panelName = reviewer.panel_name || `Panel ${panelIdNum}`;
 
 		try {
@@ -268,14 +271,10 @@ function ReviewerTableRow({
 					? `${displayName} set as panel coordinator for ${panelName}.`
 					: `Panel coordinator cleared for ${panelName}.`,
 			});
-		} catch (err) {
-			const code = err?.code || err?.data?.code;
+		} catch {
 			toast({
 				variant: 'error',
-				message:
-					code === 'panel_head_requires_account'
-						? 'Provision or link an account first.'
-						: 'Could not update panel coordinator.',
+				message: 'Could not update panel coordinator.',
 			});
 		}
 	};
@@ -442,18 +441,13 @@ function ReviewerTableRow({
 				<td className="px-4 py-3">
 					<label
 						className="inline-flex items-center gap-2"
-						title={
-							canBePanelHead
-								? 'Designate as panel coordinator'
-								: 'Send credentials first.'
-						}
+						title="Designate as panel coordinator"
 					>
 						<input
 							type="checkbox"
 							name={`panel-coordinator-${panelIdNum}`}
 							className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
 							checked={Boolean(reviewer.is_panel_head)}
-							disabled={!canBePanelHead}
 							onChange={handlePanelHeadToggle}
 							aria-label={`Panel coordinator for ${displayName}`}
 						/>
@@ -654,6 +648,7 @@ function AddReviewerForm({
 	mergePanelReviewers,
 	onRefreshReviewers,
 }) {
+	const toast = useToast();
 	const defaultPanelId =
 		sessionPanels.length === 1 ? String(sessionPanels[0].id) : '';
 	const [selectedPanelId, setSelectedPanelId] = useState(defaultPanelId);
@@ -661,7 +656,6 @@ function AddReviewerForm({
 	const [email, setEmail] = useState('');
 	const [weight, setWeight] = useState('1');
 	const [submitting, setSubmitting] = useState(false);
-	const [formNotice, setFormNotice] = useState(null);
 
 	useEffect(() => {
 		if (sessionPanels.length === 1) {
@@ -680,33 +674,23 @@ function AddReviewerForm({
 
 	const handleSubmit = async (event) => {
 		event.preventDefault();
-		setFormNotice(null);
 
 		const trimmedName = name.trim();
 		const trimmedEmail = email.trim();
 		if (!trimmedName && !trimmedEmail) {
-			setFormNotice({
-				variant: 'error',
-				message: 'Enter a reviewer name or email.',
-			});
+			toast({ variant: 'error', message: 'Enter a reviewer name or email.' });
 			return;
 		}
 
 		const panelId = Number(selectedPanelId);
 		if (!panelId) {
-			setFormNotice({
-				variant: 'error',
-				message: 'Select a panel.',
-			});
+			toast({ variant: 'error', message: 'Select a panel.' });
 			return;
 		}
 
 		const panel = sessionPanels.find((p) => Number(p.id) === panelId);
 		if (!panel) {
-			setFormNotice({
-				variant: 'error',
-				message: 'Select a panel.',
-			});
+			toast({ variant: 'error', message: 'Select a panel.' });
 			return;
 		}
 
@@ -746,13 +730,10 @@ function AddReviewerForm({
 
 			resetForm();
 			const label = created.name || trimmedEmail;
-			setFormNotice({
-				variant: 'success',
-				message: `${label} added to ${panel.name}.`,
-			});
+			toast({ variant: 'success', message: `${label} added to ${panel.name}.` });
 		} catch (err) {
 			const code = err?.code || err?.data?.code;
-			setFormNotice({
+			toast({
 				variant: 'error',
 				message:
 					code === 'pr_reviewer_email_in_session'
@@ -765,73 +746,93 @@ function AddReviewerForm({
 	};
 
 	return (
-		<div className="mt-6 rounded-md border border-border bg-surface-raised p-4 shadow-card">
-			<h3 className="text-sm font-semibold text-text">Add reviewer</h3>
+		<div className="mt-6 rounded-lg border border-border bg-surface-raised p-5 shadow-card">
+			<div className="flex items-center gap-2 mb-4">
+				<span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
+					<Icon name="users" className="h-4 w-4" />
+				</span>
+				<h3 className="text-sm font-semibold text-text">Add reviewer</h3>
+			</div>
 			<form
-				className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+				className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
 				onSubmit={handleSubmit}
 			>
 				<div>
 					<label
-						className="block text-sm font-medium text-text"
+						className="block text-xs font-medium text-text-muted mb-1"
 						htmlFor="add-reviewer-panel"
 					>
 						Panel
 					</label>
-					<select
-						id="add-reviewer-panel"
-						value={selectedPanelId}
-						onChange={(e) => setSelectedPanelId(e.target.value)}
-						required={sessionPanels.length > 1}
-						className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
-					>
-						{sessionPanels.length > 1 ? (
-							<option value="">Select panel…</option>
-						) : null}
-						{sessionPanels.map((panel) => (
-							<option key={panel.id} value={panel.id}>
-								{panel.name}
-							</option>
-						))}
-					</select>
+					<div className="relative">
+						<span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted">
+							<Icon name="panel" className="h-4 w-4" />
+						</span>
+						<select
+							id="add-reviewer-panel"
+							value={selectedPanelId}
+							onChange={(e) => setSelectedPanelId(e.target.value)}
+							required={sessionPanels.length > 1}
+							className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+						>
+							{sessionPanels.length > 1 ? (
+								<option value="">Select panel…</option>
+							) : null}
+							{sessionPanels.map((panel) => (
+								<option key={panel.id} value={panel.id}>
+									{panel.name}
+								</option>
+							))}
+						</select>
+					</div>
 				</div>
 				<div>
 					<label
-						className="block text-sm font-medium text-text"
+						className="block text-xs font-medium text-text-muted mb-1"
 						htmlFor="add-reviewer-name"
 					>
 						Reviewer name
 					</label>
-					<input
-						id="add-reviewer-name"
-						type="text"
-						autoComplete="name"
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
-						placeholder="Full name"
-					/>
+					<div className="relative">
+						<span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted">
+							<Icon name="person" className="h-4 w-4" />
+						</span>
+						<input
+							id="add-reviewer-name"
+							type="text"
+							autoComplete="name"
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+							placeholder="Full name"
+						/>
+					</div>
 				</div>
 				<div>
 					<label
-						className="block text-sm font-medium text-text"
+						className="block text-xs font-medium text-text-muted mb-1"
 						htmlFor="add-reviewer-email"
 					>
 						Email
 					</label>
-					<input
-						id="add-reviewer-email"
-						type="email"
-						autoComplete="email"
-						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
-						placeholder="reviewer@example.com"
-					/>
+					<div className="relative">
+						<span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted">
+							<Icon name="email" className="h-4 w-4" />
+						</span>
+						<input
+							id="add-reviewer-email"
+							type="email"
+							autoComplete="email"
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+							className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+							placeholder="reviewer@example.com"
+						/>
+					</div>
 				</div>
 				<div>
 					<label
-						className="block text-sm font-medium text-text"
+						className="block text-xs font-medium text-text-muted mb-1"
 						htmlFor="add-reviewer-weight"
 					>
 						Weight
@@ -843,7 +844,7 @@ function AddReviewerForm({
 						step="0.1"
 						value={weight}
 						onChange={(e) => setWeight(e.target.value)}
-						className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
+						className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
 					/>
 				</div>
 				<div className="flex items-end">
@@ -852,23 +853,12 @@ function AddReviewerForm({
 						type="submit"
 						size="sm"
 						loading={submitting}
-						className="w-full sm:w-auto"
+						className="w-full"
 					>
 						Add reviewer
 					</Button>
 				</div>
 			</form>
-
-			{formNotice ? (
-				<div className="mt-3">
-					<Notice
-						variant={formNotice.variant}
-						onDismiss={() => setFormNotice(null)}
-					>
-						{formNotice.message}
-					</Notice>
-				</div>
-			) : null}
 		</div>
 	);
 }

@@ -9,6 +9,10 @@ export type WalkthroughJourneyState = {
 	reviewerDisplayName: string;
 	studentA: { regNo: string; name: string };
 	studentB: { regNo: string; name: string };
+	studentC: { regNo: string; name: string };
+	studentD: { regNo: string; name: string };
+	reviewerPortalUrl: string;
+	reviewerPortalPassword: string;
 };
 
 const STATE_PATH = path.join(__dirname, '..', '.walkthrough-state.json');

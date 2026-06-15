@@ -24,8 +24,6 @@ use ProjectReviews\Rest_Session_Close;
 use ProjectReviews\Rest_Sessions;
 use ProjectReviews\Rest_Unfreeze_Requests;
 use ProjectReviews\Services\AuditService;
-use ProjectReviews\Services\FacultyAccountService;
-use ProjectReviews\Services\FacultyBridgeService;
 use ProjectReviews\Services\MarkService;
 use ProjectReviews\Services\PanelHeadService;
 use ProjectReviews\Services\PanelReportPdfService;
@@ -288,34 +286,6 @@ final class FullPluginJourneyTest extends TestCase
         $this->assertTrue($granted['granted']);
     }
 
-    public function test_faculty_pool_bulk_credentials(): void
-    {
-        $ctx = ScenarioBuilder::fresh($this->wpdb)
-            ->build_configured_project()
-            ->build();
-
-        RestTestFixtures::login_with_cap(PR_CAP_ASSIGN_REVIEWERS);
-        RestTestFixtures::set_valid_rest_nonce('journey-faculty');
-
-        $import = \ProjectReviews\Rest_Faculty_Accounts::import_accounts(
-            $this->json_request([
-                'rows' => [
-                    ['empId' => 'EMP200', 'name' => 'Faculty Journey', 'email' => 'faculty-journey@example.com'],
-                ],
-                'duplicate_policy' => 'skip',
-            ])
-        );
-        $this->assertIsArray($import);
-        $this->assertSame(1, $import['imported']);
-
-        $result = (new ReviewerProvisionService(
-            new SessionRepository($this->wpdb),
-            new PanelRepository($this->wpdb)
-        ))->send_all_reviewer_credentials($ctx['session_id']);
-        $this->assertIsArray($result);
-        $this->assertGreaterThanOrEqual(0, $result['sent'] + $result['skipped']);
-    }
-
     public function test_panel_head_pdf_and_freeze(): void
     {
         $ctx = ScenarioBuilder::fresh($this->wpdb)
@@ -498,7 +468,6 @@ final class FullPluginJourneyTest extends TestCase
         require_once dirname(__DIR__) . '/includes/rest/class-rest-panel-unfreeze-requests.php';
         require_once dirname(__DIR__) . '/includes/rest/class-rest-reviewer-unfreeze-requests.php';
         require_once dirname(__DIR__) . '/includes/rest/class-rest-panel-reports.php';
-        require_once dirname(__DIR__) . '/includes/rest/class-rest-faculty-accounts.php';
         require_once dirname(__DIR__) . '/includes/services/SessionCloseService.php';
         require_once dirname(__DIR__) . '/includes/services/MarkService.php';
         require_once dirname(__DIR__) . '/includes/services/ScoreService.php';

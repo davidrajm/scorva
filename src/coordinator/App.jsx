@@ -4,6 +4,7 @@ import { AppShell } from '../shared/AppShell';
 import { configureApi } from '../shared/api';
 import { RouteFallback, ToastProvider } from '../shared/components';
 import { CoordinatorNav } from './CoordinatorNav';
+import { NotificationBell } from './components/NotificationBell';
 import { CoordinatorWorkspaceTopNav } from '../shared/components/WorkspaceTopNav';
 
 const Dashboard = lazy( () =>
@@ -39,12 +40,11 @@ const PanelReportSettings = lazy( () =>
 		default: m.PanelReportSettings,
 	} ) )
 );
-const FacultyAccounts = lazy( () =>
-	import( './pages/FacultyAccounts' ).then( ( m ) => ( {
-		default: m.FacultyAccounts,
+const CoordinatorUnfreezeRequestsPage = lazy( () =>
+	import( './pages/UnfreezeRequestsPage' ).then( ( m ) => ( {
+		default: m.UnfreezeRequestsPage,
 	} ) )
 );
-
 function LazyRoute( { label, children } ) {
 	return (
 		<Suspense fallback={ <RouteFallback label={ label } /> }>
@@ -72,6 +72,7 @@ export function CoordinatorApp() {
 				variant="coordinator"
 				sidebar={ <CoordinatorNav /> }
 				topNav={ <CoordinatorWorkspaceTopNav /> }
+				notificationBell={ <NotificationBell /> }
 			>
 				<Routes>
 					<Route
@@ -123,14 +124,6 @@ export function CoordinatorApp() {
 						}
 					/>
 					<Route
-						path="/faculty"
-						element={
-							<LazyRoute label="Loading faculty accounts">
-								<FacultyAccounts />
-							</LazyRoute>
-						}
-					/>
-					<Route
 						path="/session/:id/reports"
 						element={
 							<LazyRoute label="Loading reports">
@@ -159,6 +152,14 @@ export function CoordinatorApp() {
 						element={
 							<LazyRoute label="Loading panel report settings">
 								<PanelReportSettings />
+							</LazyRoute>
+						}
+					/>
+					<Route
+						path="/unfreeze-requests"
+						element={
+							<LazyRoute label="Loading unfreeze requests">
+								<CoordinatorUnfreezeRequestsPage />
 							</LazyRoute>
 						}
 					/>

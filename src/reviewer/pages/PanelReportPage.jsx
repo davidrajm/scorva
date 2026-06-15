@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from '@wordpress/element';
+import { useCallback, useEffect, useRef, useState } from '@wordpress/element';
 import { Link, useParams } from 'react-router-dom';
 import { get, getBlob, post } from '../../shared/api';
 import {
@@ -8,6 +8,7 @@ import {
 	PageHeader,
 	StatusChip,
 } from '../../shared/components';
+import { Icon } from '../../shared/components/NavIcon';
 import { ReportsScoresTable } from '../../coordinator/components/ReportsScoresTable';
 import { mapMarkApiError } from '../../shared/markErrors';
 
@@ -29,6 +30,8 @@ export function PanelReportPage() {
 	const [ unfreezeReason, setUnfreezeReason ] = useState( '' );
 	const [ requestingUnfreeze, setRequestingUnfreeze ] = useState( false );
 	const [ unfreezeError, setUnfreezeError ] = useState( null );
+	const [ panelUnfreezeGrantedNotice, setPanelUnfreezeGrantedNotice ] = useState( false );
+	const prevPanelUnfreezePending = useRef( null );
 
 	const load = useCallback( async () => {
 		if ( ! session || ! review || ! panel ) {
@@ -52,6 +55,27 @@ export function PanelReportPage() {
 	useEffect( () => {
 		load();
 	}, [ load ] );
+
+	const panelUnfreezePending =
+		report?.panel_unfreeze_request_status === 'pending';
+
+	// Poll every 30 s while a panel unfreeze request is outstanding.
+	useEffect( () => {
+		if ( ! panelUnfreezePending ) {
+			return undefined;
+		}
+		const id = setInterval( load, 30_000 );
+		return () => clearInterval( id );
+	}, [ panelUnfreezePending, load ] );
+
+	// Detect approval: was pending → no longer pending AND panel is now unfrozen.
+	useEffect( () => {
+		const wasPending = prevPanelUnfreezePending.current === true;
+		if ( wasPending && ! panelUnfreezePending && ! report?.panel_frozen ) {
+			setPanelUnfreezeGrantedNotice( true );
+		}
+		prevPanelUnfreezePending.current = panelUnfreezePending;
+	}, [ panelUnfreezePending, report?.panel_frozen ] );
 
 	const handleDownloadPdf = async () => {
 		setDownloading( true );
@@ -98,6 +122,7 @@ export function PanelReportPage() {
 			setUnfreezeOpen( false );
 			setUnfreezeReason( '' );
 			await load();
+			window.dispatchEvent( new Event( 'pr:unfreeze-changed' ) );
 		} catch ( err ) {
 			setUnfreezeError( mapMarkApiError( err ) );
 		} finally {
@@ -202,11 +227,47 @@ export function PanelReportPage() {
 				</div>
 			) : null }
 
+			{ panelUnfreezeGrantedNotice ? (
+				<div className="mb-4" role="status" aria-live="polite">
+					<Notice variant="success">
+						<div className="flex items-start justify-between gap-3">
+							<div>
+								<p className="font-medium">
+									The coordinator approved your panel unfreeze request.
+								</p>
+								<p className="mt-1 text-sm">
+									The panel report is now editable. Freeze it again when
+									you&apos;re ready to generate the final PDF.
+								</p>
+							</div>
+							<button
+								type="button"
+								// eslint-disable-next-line jsx-a11y/no-autofocus
+								autoFocus
+								aria-label="Dismiss notice"
+								className="shrink-0 rounded p-1 hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+								onClick={ () => setPanelUnfreezeGrantedNotice( false ) }
+							>
+								<Icon name="dismiss" className="h-4 w-4" />
+							</button>
+						</div>
+					</Notice>
+				</div>
+			) : null }
+
 			{ ! report?.panel_report_settings_frozen && ! loading && ! error ? (
 				<div className="mb-4">
 					<Notice variant="warning">
 						PDF download is available after the project coordinator freezes panel
 						report settings.
+					</Notice>
+				</div>
+			) : null }
+
+			{ report?.panel_report_settings_frozen && ! report?.panel_frozen && ! loading && ! error ? (
+				<div className="mb-4">
+					<Notice variant="warning">
+						Freeze the panel scores to enable PDF download.
 					</Notice>
 				</div>
 			) : null }
@@ -218,7 +279,8 @@ export function PanelReportPage() {
 					disabled={
 						loading ||
 						Boolean( error ) ||
-						! report?.panel_report_settings_frozen
+						! report?.panel_report_settings_frozen ||
+						! report?.panel_frozen
 					}
 					onClick={ handleDownloadPdf }
 				>

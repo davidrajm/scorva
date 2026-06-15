@@ -458,6 +458,24 @@ final class PanelRepository
         return is_array($row);
     }
 
+    public function is_user_any_panel_head(int $user_id): bool
+    {
+        if ($user_id <= 0) {
+            return false;
+        }
+
+        $count = (int) $this->wpdb->get_var(
+            $this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->reviewers_table}
+                 WHERE user_id = %d AND is_panel_head = 1
+                 LIMIT 1",
+                $user_id
+            )
+        );
+
+        return $count > 0;
+    }
+
     /**
      * @param list<array{panel?: string, reviewer_name?: string, name?: string, email?: string, weight?: float|int|string}> $rows
      * @return array{

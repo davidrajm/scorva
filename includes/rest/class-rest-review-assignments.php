@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ProjectReviews;
 
+use ProjectReviews\Repositories\MarkRepository;
 use ProjectReviews\Repositories\PanelRepository;
 use ProjectReviews\Repositories\ReviewAssignmentRepository;
 use ProjectReviews\Repositories\ReviewRepository;
@@ -132,6 +133,8 @@ final class Rest_Review_Assignments
             );
         }
 
+        $purge_marks = !empty($body['purge_marks']);
+
         $panels = new PanelRepository();
         $panel_ids = array_map(
             static fn (array $p): int => (int) ($p['id'] ?? 0),
@@ -139,6 +142,9 @@ final class Rest_Review_Assignments
         );
 
         $payload = [];
+        $blocked_student_ids = [];
+        $marks_repo = new MarkRepository();
+
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 continue;
@@ -152,7 +158,35 @@ final class Rest_Review_Assignments
             if (array_key_exists('project_title', $row)) {
                 $entry['project_title'] = (string) ($row['project_title'] ?? '');
             }
+
+            $existing = $context['assignments']->get_student_panel($context['review_id'], $student_id);
+            $is_panel_change = $existing !== null && (int) $existing['panel_id'] !== $panel_id;
+
+            if ($is_panel_change) {
+                $has_marks = !empty($marks_repo->list_for_student_review(
+                    $context['session_id'],
+                    $context['review_id'],
+                    $student_id
+                ));
+                if ($has_marks) {
+                    if ($purge_marks) {
+                        $marks_repo->delete_all_for_student_in_review($context['review_id'], $student_id);
+                    } else {
+                        $blocked_student_ids[] = $student_id;
+                        continue;
+                    }
+                }
+            }
+
             $payload[] = $entry;
+        }
+
+        if (!empty($blocked_student_ids) && !$purge_marks) {
+            return new \WP_Error(
+                'pr_review_reassign_has_marks',
+                __('Some students have scores in this review. Confirm to delete their marks and reassign.', 'scorva'),
+                ['status' => 409, 'affected_student_ids' => $blocked_student_ids]
+            );
         }
 
         $context['assignments']->bulk_set_student_panels($context['review_id'], $payload);

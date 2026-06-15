@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: zip, mbstring, gd, xml, intl
+          tools: composer:v2
+
+      - name: Install JS dependencies
+        run: npm ci --loglevel=error --no-audit
+
+      - name: Build JS assets
+        run: npm run build
+
+      - name: Install PHP dependencies (production)
+        run: composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+
+      - name: Determine version
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release ZIP
+        run: |
+          PLUGIN_SLUG="project-reviews"
+          VERSION="${{ steps.version.outputs.version }}"
+          ZIP_NAME="${PLUGIN_SLUG}-${VERSION}.zip"
+          mkdir -p dist
+          cd ..
+          zip -r "project-reviews/dist/${ZIP_NAME}" "${PLUGIN_SLUG}" \
+            -x "${PLUGIN_SLUG}/node_modules/*" \
+            -x "${PLUGIN_SLUG}/tests/*" \
+            -x "${PLUGIN_SLUG}/test-results/*" \
+            -x "${PLUGIN_SLUG}/playwright-report/*" \
+            -x "${PLUGIN_SLUG}/_bmad-output/*" \
+            -x "${PLUGIN_SLUG}/_bmad/*" \
+            -x "${PLUGIN_SLUG}/.git/*" \
+            -x "${PLUGIN_SLUG}/.github/*" \
+            -x "${PLUGIN_SLUG}/.claude/*" \
+            -x "${PLUGIN_SLUG}/.gitignore" \
+            -x "${PLUGIN_SLUG}/dist/*" \
+            -x "${PLUGIN_SLUG}/src/*" \
+            -x "${PLUGIN_SLUG}/.phpunit.result.cache" \
+            -x "${PLUGIN_SLUG}/package.json" \
+            -x "${PLUGIN_SLUG}/package-lock.json" \
+            -x "${PLUGIN_SLUG}/webpack.config.js" \
+            -x "${PLUGIN_SLUG}/postcss.config.js" \
+            -x "${PLUGIN_SLUG}/tailwind.config.js" \
+            -x "${PLUGIN_SLUG}/playwright.config.ts" \
+            -x "${PLUGIN_SLUG}/browser-sync.config.js" \
+            -x "${PLUGIN_SLUG}/phpunit.xml"
+          echo "ZIP_PATH=project-reviews/dist/${ZIP_NAME}" >> "$GITHUB_ENV"
+          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Scorva ${{ steps.version.outputs.tag }}"
+          body: |
+            ## Installation
+
+            1. Download `${{ env.ZIP_NAME }}` below
+            2. In your WordPress admin go to **Plugins → Add New → Upload Plugin**
+            3. Upload the ZIP and activate
+
+            See the [README](https://github.com/${{ github.repository }}/blob/main/README.md) for full setup instructions.
+          files: dist/${{ env.ZIP_NAME }}
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}

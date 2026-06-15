@@ -12,6 +12,7 @@ import {
 	PageContentSkeleton,
 	PageHeader,
 	WizardNav,
+	useToast,
 } from '../../shared/components';
 
 const CONFIRM_WITH_SCORES_PHRASE = 'Confirm';
@@ -56,7 +57,6 @@ export function SessionWizard() {
 	const [ enrolled, setEnrolled ] = useState( [] );
 	const [ panels, setPanels ] = useState( [] );
 	const [ reviewers, setReviewers ] = useState( [] );
-	const [ notice, setNotice ] = useState( null );
 	const [ loading, setLoading ] = useState( true );
 	const [ openingSession, setOpeningSession ] = useState( false );
 	const [ showStudentImport, setShowStudentImport ] = useState( false );
@@ -66,6 +66,9 @@ export function SessionWizard() {
 		name: '',
 		program: '',
 		batch: '',
+		guide_emp_id: '',
+		guide_name: '',
+		project_title: '',
 	} );
 	const [ addingStudent, setAddingStudent ] = useState( false );
 	const [ deleteAllDialogOpen, setDeleteAllDialogOpen ] = useState( false );
@@ -73,6 +76,10 @@ export function SessionWizard() {
 		useState( false );
 	const [ deleteAllPhrase, setDeleteAllPhrase ] = useState( '' );
 	const [ deletingAllStudents, setDeletingAllStudents ] = useState( false );
+	const [ removeStudentId, setRemoveStudentId ] = useState( null );
+	const [ dirtyFields, setDirtyFields ] = useState( {} );
+	const markDirty = ( key ) => setDirtyFields( ( prev ) => ( { ...prev, [ key ]: true } ) );
+	const markClean = ( key ) => setDirtyFields( ( prev ) => { const next = { ...prev }; delete next[ key ]; return next; } );
 
 	const refreshSessionData = useCallback(
 		async ( { showLoading = false } = {} ) => {
@@ -103,7 +110,7 @@ export function SessionWizard() {
 				setReviewers( reviewersData.reviewers ?? [] );
 				setReviewsHubReloadTick( ( t ) => t + 1 );
 			} catch {
-				setNotice( {
+				toast( {
 					variant: 'error',
 					message: 'Could not load project. It may have been removed.',
 				} );
@@ -122,7 +129,7 @@ export function SessionWizard() {
 
 	const handleEnrolImportSuccess = useCallback( ( { variant, message } ) => {
 		if ( message ) {
-			setNotice( { variant: variant ?? 'success', message } );
+			toast( { variant: variant ?? 'success', message } );
 		}
 	}, [] );
 
@@ -204,10 +211,6 @@ export function SessionWizard() {
 			blocked.reviews =
 				'Add linked reviewers on the Reviewers step first.';
 		}
-		if ( ! wizardState?.can_advance_to_assignments ) {
-			blocked.assignments =
-				'Add rubric criteria for every review round first.';
-		}
 		if ( ! wizardState?.assignments_complete ) {
 			blocked.marking =
 				'Complete panel assignments for every review round first.';
@@ -241,13 +244,13 @@ export function SessionWizard() {
 				status: 'active',
 			} );
 			setSession( updated );
-			setNotice( {
+			toast( {
 				variant: 'success',
 				message:
 					'Project is now active. Reviewers can see assignments when rubrics are confirmed and marking is on.',
 			} );
 		} catch {
-			setNotice( {
+			toast( {
 				variant: 'error',
 				message: 'Could not open project for marking.',
 			} );
@@ -256,7 +259,7 @@ export function SessionWizard() {
 		}
 	};
 
-	const saveEnrolmentField = async ( studentId, fields, localPatch ) => {
+	const saveEnrolmentField = async ( studentId, fields, localPatch, successMessage ) => {
 		try {
 			await put( `/sessions/${ sessionId }/students/${ studentId }`, fields );
 			setEnrolled( ( rows ) =>
@@ -264,11 +267,11 @@ export function SessionWizard() {
 					row.student?.id === studentId ? { ...row, ...localPatch } : row
 				)
 			);
+			if ( successMessage ) {
+				toast( { variant: 'success', message: successMessage } );
+			}
 		} catch {
-			setNotice( {
-				variant: 'error',
-				message: 'Could not save enrolment details.',
-			} );
+			toast( { variant: 'error', message: 'Could not save enrolment details.' } );
 		}
 	};
 
@@ -276,37 +279,54 @@ export function SessionWizard() {
 		await saveEnrolmentField(
 			studentId,
 			{ project_title: projectTitle },
-			{ project_title: projectTitle }
+			{ project_title: projectTitle },
+			'Project title saved.'
 		);
 	};
 
 	const saveGuideField = async ( studentId, field, value ) => {
-		await saveEnrolmentField( studentId, { [ field ]: value }, { [ field ]: value } );
+		const label = field === 'guide_emp_id' ? 'Guide emp. ID saved.' : 'Guide name saved.';
+		await saveEnrolmentField( studentId, { [ field ]: value }, { [ field ]: value }, label );
 	};
 
 	const assignPanel = async ( studentId, panelId ) => {
 		const panel = panels.find( ( p ) => p.id === panelId );
-		await saveEnrolmentField(
-			studentId,
-			{ panel_id: panelId || null },
-			{
+		try {
+			await put( `/sessions/${ sessionId }/students/${ studentId }`, {
 				panel_id: panelId || null,
-				panel_name: panel?.name ?? null,
+			} );
+			setEnrolled( ( rows ) =>
+				rows.map( ( row ) =>
+					row.student?.id === studentId
+						? { ...row, panel_id: panelId || null, panel_name: panel?.name ?? null }
+						: row
+				)
+			);
+			toast( { variant: 'success', message: 'Panel assigned.' } );
+		} catch ( err ) {
+			if ( err?.code === 'pr_panel_change_blocked' ) {
+				toast( {
+					variant: 'error',
+					message: parseApiErrorMessage(
+						err,
+						'This student has scores recorded. Use the Review Assignments step to reassign.'
+					),
+				} );
+			} else {
+				toast( { variant: 'error', message: 'Could not save enrolment details.' } );
 			}
-		);
+		}
 	};
 
 	const removeEnrolment = async ( studentId ) => {
 		try {
 			await del( `/sessions/${ sessionId }/students/${ studentId }` );
+			toast( { variant: 'success', message: 'Student removed from this project.' } );
 			loadAll();
 		} catch ( err ) {
-			setNotice( {
+			toast( {
 				variant: 'error',
-				message: parseApiErrorMessage(
-					err,
-					'Could not remove student.'
-				),
+				message: parseApiErrorMessage( err, 'Could not remove student.' ),
 			} );
 		}
 	};
@@ -336,10 +356,10 @@ export function SessionWizard() {
 			if ( registryDeleted > 0 ) {
 				message += ` ${ registryDeleted } also removed from All Students (not enrolled elsewhere).`;
 			}
-			setNotice( { variant: 'success', message } );
+			toast( { variant: 'success', message } );
 			await refreshSessionData( { showLoading: false } );
 		} catch ( err ) {
-			setNotice( {
+			toast( {
 				variant: 'error',
 				message: parseApiErrorMessage(
 					err,
@@ -372,6 +392,9 @@ export function SessionWizard() {
 				name: addStudentForm.name.trim(),
 				program: addStudentForm.program.trim(),
 				batch: addStudentForm.batch.trim(),
+				guide_emp_id: addStudentForm.guide_emp_id.trim(),
+				guide_name: addStudentForm.guide_name.trim(),
+				project_title: addStudentForm.project_title.trim(),
 			} );
 			if ( result?.student ) {
 				setEnrolled( ( rows ) => {
@@ -388,15 +411,15 @@ export function SessionWizard() {
 					return [ ...rows, result.student ];
 				} );
 			}
-			setAddStudentForm( { reg_no: '', name: '', program: '', batch: '' } );
+			setAddStudentForm( { reg_no: '', name: '', program: '', batch: '', guide_emp_id: '', guide_name: '', project_title: '' } );
 			setShowAddStudentForm( false );
-			setNotice( {
+			toast( {
 				variant: 'success',
 				message: 'Student added to this project.',
 			} );
 			await refreshSessionData( { showLoading: false } );
 		} catch ( err ) {
-			setNotice( {
+			toast( {
 				variant: 'error',
 				message: parseApiErrorMessage(
 					err,
@@ -407,6 +430,8 @@ export function SessionWizard() {
 			setAddingStudent( false );
 		}
 	};
+
+	const toast = useToast();
 
 	const { showSkeleton } = useLoadingPhase( loading, session !== null );
 
@@ -456,13 +481,6 @@ export function SessionWizard() {
 				}
 			/>
 
-			{ notice ? (
-				<div className="mt-4">
-					<Notice variant={ notice.variant } onDismiss={ () => setNotice( null ) }>
-						{ notice.message }
-					</Notice>
-				</div>
-			) : null }
 
 			{ session.status === 'draft' ? (
 				<div className="mb-6 mt-4 flex flex-col gap-3 rounded-md border border-border bg-surface-raised p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -627,6 +645,69 @@ export function SessionWizard() {
 										className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
 									/>
 								</div>
+								<div>
+									<label
+										htmlFor="wizard-student-guide-emp-id"
+										className="block text-sm font-medium text-text"
+									>
+										Guide emp. ID{ ' ' }
+										<span className="text-text-muted font-normal">(optional)</span>
+									</label>
+									<input
+										id="wizard-student-guide-emp-id"
+										type="text"
+										value={ addStudentForm.guide_emp_id }
+										onChange={ ( e ) =>
+											setAddStudentForm( ( form ) => ( {
+												...form,
+												guide_emp_id: e.target.value,
+											} ) )
+										}
+										className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
+									/>
+								</div>
+								<div>
+									<label
+										htmlFor="wizard-student-guide-name"
+										className="block text-sm font-medium text-text"
+									>
+										Guide name{ ' ' }
+										<span className="text-text-muted font-normal">(optional)</span>
+									</label>
+									<input
+										id="wizard-student-guide-name"
+										type="text"
+										value={ addStudentForm.guide_name }
+										onChange={ ( e ) =>
+											setAddStudentForm( ( form ) => ( {
+												...form,
+												guide_name: e.target.value,
+											} ) )
+										}
+										className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
+									/>
+								</div>
+							</div>
+							<div>
+								<label
+									htmlFor="wizard-student-project-title"
+									className="block text-sm font-medium text-text"
+								>
+									Project title{ ' ' }
+									<span className="text-text-muted font-normal">(optional)</span>
+								</label>
+								<input
+									id="wizard-student-project-title"
+									type="text"
+									value={ addStudentForm.project_title }
+									onChange={ ( e ) =>
+										setAddStudentForm( ( form ) => ( {
+											...form,
+											project_title: e.target.value,
+										} ) )
+									}
+									className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
+								/>
 							</div>
 							<Button
 								type="submit"
@@ -712,29 +793,25 @@ export function SessionWizard() {
 														className="w-full min-w-[6rem] rounded-md border border-border bg-surface px-2 py-1 text-sm"
 														value={ row.guide_emp_id ?? '' }
 														placeholder="Guide emp. ID"
-														onChange={ ( e ) =>
+														onChange={ ( e ) => {
+															markDirty( `${ row.enrolment_id }-guide_emp_id` );
 															setEnrolled( ( rows ) =>
 																rows.map( ( item ) =>
-																	item.enrolment_id ===
-																	row.enrolment_id
-																		? {
-																				...item,
-																				guide_emp_id:
-																					e.target
-																						.value,
-																		  }
+																	item.enrolment_id === row.enrolment_id
+																		? { ...item, guide_emp_id: e.target.value }
 																		: item
 																)
-															)
-														}
-														onBlur={ ( e ) =>
-															saveGuideField(
-																row.student.id,
-																'guide_emp_id',
-																e.target.value
-															)
-														}
+															);
+														} }
+														onKeyDown={ ( e ) => { if ( e.key === 'Enter' ) { e.preventDefault(); e.target.blur(); } } }
+														onBlur={ ( e ) => {
+															markClean( `${ row.enrolment_id }-guide_emp_id` );
+															saveGuideField( row.student.id, 'guide_emp_id', e.target.value );
+														} }
 													/>
+													{ dirtyFields[ `${ row.enrolment_id }-guide_emp_id` ] && (
+														<p className="mt-0.5 text-xs text-text-muted">↵ Enter to save</p>
+													) }
 												</td>
 												<td className="px-3 py-2">
 													<input
@@ -742,29 +819,25 @@ export function SessionWizard() {
 														className="w-full min-w-[8rem] rounded-md border border-border bg-surface px-2 py-1 text-sm"
 														value={ row.guide_name ?? '' }
 														placeholder="Guide name"
-														onChange={ ( e ) =>
+														onChange={ ( e ) => {
+															markDirty( `${ row.enrolment_id }-guide_name` );
 															setEnrolled( ( rows ) =>
 																rows.map( ( item ) =>
-																	item.enrolment_id ===
-																	row.enrolment_id
-																		? {
-																				...item,
-																				guide_name:
-																					e.target
-																						.value,
-																		  }
+																	item.enrolment_id === row.enrolment_id
+																		? { ...item, guide_name: e.target.value }
 																		: item
 																)
-															)
-														}
-														onBlur={ ( e ) =>
-															saveGuideField(
-																row.student.id,
-																'guide_name',
-																e.target.value
-															)
-														}
+															);
+														} }
+														onKeyDown={ ( e ) => { if ( e.key === 'Enter' ) { e.preventDefault(); e.target.blur(); } } }
+														onBlur={ ( e ) => {
+															markClean( `${ row.enrolment_id }-guide_name` );
+															saveGuideField( row.student.id, 'guide_name', e.target.value );
+														} }
 													/>
+													{ dirtyFields[ `${ row.enrolment_id }-guide_name` ] && (
+														<p className="mt-0.5 text-xs text-text-muted">↵ Enter to save</p>
+													) }
 												</td>
 												<td className="px-3 py-2">
 													<select
@@ -799,28 +872,25 @@ export function SessionWizard() {
 														className="w-full min-w-[12rem] rounded-md border border-border bg-surface px-2 py-1 text-sm"
 														value={ row.project_title ?? '' }
 														placeholder="Project title"
-														onChange={ ( e ) =>
+														onChange={ ( e ) => {
+															markDirty( `${ row.enrolment_id }-project_title` );
 															setEnrolled( ( rows ) =>
 																rows.map( ( item ) =>
-																	item.enrolment_id ===
-																	row.enrolment_id
-																		? {
-																				...item,
-																				project_title:
-																					e.target
-																						.value,
-																		  }
+																	item.enrolment_id === row.enrolment_id
+																		? { ...item, project_title: e.target.value }
 																		: item
 																)
-															)
-														}
-														onBlur={ ( e ) =>
-															saveProjectTitle(
-																row.student.id,
-																e.target.value
-															)
-														}
+															);
+														} }
+														onKeyDown={ ( e ) => { if ( e.key === 'Enter' ) { e.preventDefault(); e.target.blur(); } } }
+														onBlur={ ( e ) => {
+															markClean( `${ row.enrolment_id }-project_title` );
+															saveProjectTitle( row.student.id, e.target.value );
+														} }
 													/>
+													{ dirtyFields[ `${ row.enrolment_id }-project_title` ] && (
+														<p className="mt-0.5 text-xs text-text-muted">↵ Enter to save</p>
+													) }
 												</td>
 												<td className="px-3 py-2 text-right">
 													<Button
@@ -832,11 +902,7 @@ export function SessionWizard() {
 																? 'Cannot remove: this student has scores in one or more review rounds.'
 																: undefined
 														}
-														onClick={ () =>
-															removeEnrolment(
-																row.student.id
-															)
-														}
+														onClick={ () => setRemoveStudentId( row.student.id ) }
 													>
 														Remove
 													</Button>
@@ -868,7 +934,7 @@ export function SessionWizard() {
 					enrolled={ enrolled }
 					wizardState={ wizardState }
 					onReload={ loadAll }
-					onNotice={ setNotice }
+					onNotice={ toast }
 					onContinue={ goNext }
 					blockedTitle={ blockedSteps.reviewers }
 				/>
@@ -880,7 +946,7 @@ export function SessionWizard() {
 					panels={ panels }
 					reviewers={ reviewers }
 					setReviewers={ setReviewers }
-					onNotice={ setNotice }
+					onNotice={ toast }
 					onRefreshReviewers={ refreshReviewers }
 					onReload={ loadAll }
 				/>
@@ -890,7 +956,7 @@ export function SessionWizard() {
 				<ReviewsSetupStep
 					sessionId={ sessionId }
 					onReload={ loadAll }
-					onNotice={ setNotice }
+					onNotice={ toast }
 					canAdvanceToAssignments={ ! blockedSteps.assignments }
 					onContinue={ goNext }
 					rubricsReloadDependency={ reviewsHubReloadTick }
@@ -903,7 +969,7 @@ export function SessionWizard() {
 					panels={ panels }
 					wizardState={ wizardState }
 					onReload={ loadAll }
-					onNotice={ setNotice }
+					onNotice={ toast }
 					onContinue={ goNext }
 				/>
 			) : null }
@@ -913,10 +979,26 @@ export function SessionWizard() {
 					sessionId={ sessionId }
 					sessionStatus={ session.status }
 					onReload={ loadAll }
-					onNotice={ setNotice }
+					onNotice={ toast }
 					isWizardTerminalStep
 				/>
 			) : null }
+
+			<ConfirmDialog
+				open={ removeStudentId !== null }
+				title="Remove this student from the project?"
+				consequences={ [
+					'The student will be unenrolled from this project only.',
+					'If not enrolled elsewhere, they will also be removed from All Students.',
+				] }
+				confirmLabel="Remove student"
+				confirmVariant="destructive"
+				onCancel={ () => setRemoveStudentId( null ) }
+				onConfirm={ () => {
+					removeEnrolment( removeStudentId );
+					setRemoveStudentId( null );
+				} }
+			/>
 
 			<ConfirmDialog
 				open={ deleteAllDialogOpen }

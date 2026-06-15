@@ -226,6 +226,7 @@ final class Rest_Portal
                 'name' => (string) ($reviewer['name'] ?? ''),
                 'email' => (string) ($reviewer['email'] ?? ''),
                 'user_id' => (int) ($reviewer['user_id'] ?? 0),
+                'is_panel_head' => (int) ($reviewer['is_panel_head'] ?? 0) === 1,
             ],
             'project' => [
                 'id' => $session_id,

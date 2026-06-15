@@ -1,8 +1,10 @@
 import { expect, type Page } from '@playwright/test';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import {
 	loginWordPress,
 	gotoCoordinatorHash,
-	gotoReviewerHash,
 } from './auth';
 import type { E2eEnv } from './env';
 import type { WalkthroughJourneyState } from './walkthrough-state';
@@ -28,7 +30,18 @@ export function createJourneyContext(runId = Date.now()) {
 			regNo: `E2E-${runId}-B`,
 			name: `E2E Student B ${runId}`,
 		},
+		// Students C and D are imported via CSV with guide fields
+		studentC: {
+			regNo: `E2E-${runId}-C`,
+			name: `E2E Student C ${runId}`,
+		},
+		studentD: {
+			regNo: `E2E-${runId}-D`,
+			name: `E2E Student D ${runId}`,
+		},
 		sessionId: null as string | null,
+		reviewerPortalUrl: null as string | null,
+		reviewerPortalPassword: null as string | null,
 	};
 }
 
@@ -40,14 +53,16 @@ export async function runCoordinatorSetup(
 	ctx: JourneyContext,
 	onStep?: StepCallback
 ): Promise<void> {
-	const total = 10;
+	const total = 12;
 	const step = (n: number, title: string, detail?: string) =>
 		onStep ? onStep(n, total, title, detail) : Promise.resolve();
 
+	// Step 1 — Login
 	await step(1, 'Coordinator login', env.coordUser);
 	await loginWordPress(page, env.coordUser, env.coordPass);
 
-	await step(2, 'Create project', 'Empty roster — add students in wizard');
+	// Step 2 — Create project
+	await step(2, 'Create project', 'Empty roster — students added in wizard');
 	await gotoCoordinatorHash(page, '/');
 	await page.getByTestId('pr-show-create-project').click();
 	await page.getByTestId('pr-project-title').fill(ctx.projectTitle);
@@ -63,45 +78,68 @@ export async function runCoordinatorSetup(
 	expect(idMatch).toBeTruthy();
 	ctx.sessionId = idMatch![1];
 
-	await step(3, 'Wizard — Students', 'Add first student');
+	// Steps 3–4 — Add students A and B manually
+	await step(3, 'Wizard — Students', 'Add student A manually');
 	await addWizardStudent(page, ctx.studentA);
-	await step(4, 'Wizard — Students', 'Add second student');
+
+	await step(4, 'Wizard — Students', 'Add student B manually');
 	await addWizardStudent(page, ctx.studentB);
 
-	await step(5, 'Wizard — Students', 'Confirm roster, continue to Panels');
-	await expect(page.getByText(ctx.studentA.regNo)).toBeVisible();
+	// Step 5 — Panels: create panel and assign students A + B
+	await step(5, 'Wizard — Panels', 'Create panel and assign students A + B');
 	await page.getByRole('button', { name: 'Continue to Panels' }).click();
-
-	await step(6, 'Wizard — Panels', 'Create panel and assign students');
 	await page.getByPlaceholder('Panel name').fill(ctx.panelName);
 	await page.getByRole('button', { name: 'Add panel' }).click();
 	await expect(
 		page.getByRole('button', { name: `Rename panel ${ctx.panelName}` })
-	).toBeVisible();
+	).toBeVisible({ timeout: 20_000 });
 	for (const student of [ctx.studentA, ctx.studentB]) {
 		const row = page.locator('li').filter({ hasText: student.regNo });
-		await row.getByRole('combobox', { name: new RegExp(student.name) }).selectOption({
-			label: ctx.panelName,
-		});
+		await row
+			.getByRole('combobox', { name: new RegExp(student.name) })
+			.selectOption({ label: ctx.panelName });
 	}
-	await page.getByRole('button', { name: 'Continue to Reviewers' }).click();
 
+	// Step 6 — Back to Students tab: import students C + D via CSV with guide fields
 	await step(
-		7,
-		'Wizard — Reviewers',
-		'Add reviewer email and Send credentials → Account linked'
+		6,
+		'Wizard — Students (CSV)',
+		'Import students C + D with guide_emp_id and guide_name'
 	);
+	await page.getByRole('tab', { name: 'Students' }).click();
+	await page.getByRole('button', { name: 'Import Students' }).click();
+	await uploadSessionEnrolCsv(page, ctx);
+
+	// Step 7 — Reviewers: add reviewer to the panel
+	await step(7, 'Wizard — Reviewers', 'Add reviewer to panel');
+	await page.getByRole('tab', { name: 'Reviewers' }).click();
 	await page.locator('#add-reviewer-name').fill(ctx.reviewerDisplayName);
 	await page.locator('#add-reviewer-email').fill(env.reviewerEmail);
 	await page.getByRole('button', { name: 'Add reviewer' }).click();
 	const reviewerRow = page.locator('tr').filter({ hasText: env.reviewerEmail });
 	await expect(reviewerRow).toBeVisible({ timeout: 30_000 });
+
+	// Step 8 — Send credentials, then open the portal link modal to capture URL + password
+	await step(
+		8,
+		'Wizard — Credentials',
+		'Send credentials → View link → capture portal URL and password'
+	);
 	await reviewerRow.getByRole('button', { name: 'Send credentials' }).click();
-	await expect(reviewerRow.getByText('Account linked')).toBeVisible({
+	// After generation the row switches to Resend / Regenerate / View link
+	await expect(reviewerRow.getByRole('button', { name: 'Resend' })).toBeVisible({
 		timeout: 30_000,
 	});
+	await reviewerRow.getByRole('button', { name: 'View link' }).click();
+	const credModal = page.getByRole('dialog', { name: 'Reviewer credentials' });
+	await expect(credModal).toBeVisible({ timeout: 15_000 });
+	ctx.reviewerPortalUrl = await credModal.getByLabel('Login URL').inputValue();
+	ctx.reviewerPortalPassword = await credModal.getByLabel('Password').inputValue();
+	await credModal.getByRole('button', { name: 'Close' }).click();
+	await expect(credModal).toBeHidden();
 
-	await step(8, 'Wizard — Rubric', 'Criterion, max marks, Confirm rubric');
+	// Step 9 — Reviews & rubrics: add a criterion and confirm the rubric
+	await step(9, 'Wizard — Rubric', 'Add criterion, max marks, Confirm rubric');
 	await page.getByRole('tab', { name: 'Reviews & rubrics' }).click();
 	const createReview = page.getByRole('button', { name: 'Create Review 1' });
 	if (await createReview.isVisible().catch(() => false)) {
@@ -110,6 +148,7 @@ export async function runCoordinatorSetup(
 	const rubricTable = page.locator('table').filter({
 		has: page.getByRole('columnheader', { name: 'Max marks' }),
 	});
+	await expect(rubricTable).toBeVisible({ timeout: 20_000 });
 	const criterionRow = rubricTable.locator('tbody tr').first();
 	await criterionRow.getByRole('textbox').nth(0).fill('Technical quality');
 	await criterionRow.getByRole('textbox').nth(1).fill('10');
@@ -127,15 +166,20 @@ export async function runCoordinatorSetup(
 			.getByText('Confirmed')
 	).toBeVisible({ timeout: 20_000 });
 
-	await step(9, 'Wizard — Panel assignments', 'Reload so tab unlocks');
+	// Step 10 — Panel assignments (reload first so tab unlocks after rubric confirm)
+	await step(10, 'Wizard — Panel assignments', 'Reload so tab unlocks, then navigate');
 	await page.reload();
 	await page.locator('#pr-root').waitFor({ state: 'visible' });
 	await page.getByRole('tab', { name: /Panel assignments/i }).click();
 
-	await step(10, 'Open project for marking', 'Open reviews → Start marking');
+	// Step 11 — Advance to the Open reviews / Marking step
+	await step(11, 'Wizard — Open reviews', 'Continue to the marking step');
 	await page.getByRole('button', { name: 'Continue to Open reviews' }).click({
 		timeout: 30_000,
 	});
+
+	// Step 12 — Open project for marking and start Review 1
+	await step(12, 'Open for marking', 'Open → Start marking → Marking open');
 	await page.getByRole('button', { name: 'Open for marking' }).click();
 	await expect(page.getByText('Draft project')).toBeHidden({ timeout: 20_000 });
 	await page.getByRole('button', { name: 'Start marking' }).first().click();
@@ -273,22 +317,41 @@ export async function runCoordinatorDeleteDraftProject(
 	await expect(page.getByText(draftTitle, { exact: true })).toHaveCount(0);
 }
 
+/**
+ * Reviewer logs in via the token portal link (not WP admin) and saves a score.
+ */
 export async function runReviewerMarking(
 	page: Page,
 	env: E2eEnv,
-	ctx: Pick<JourneyContext, 'projectTitle' | 'studentA'>,
+	ctx: Pick<
+		JourneyContext,
+		'projectTitle' | 'studentA' | 'reviewerPortalUrl' | 'reviewerPortalPassword'
+	>,
 	onStep?: StepCallback
 ): Promise<void> {
+	if (!ctx.reviewerPortalUrl || !ctx.reviewerPortalPassword) {
+		throw new Error(
+			'reviewerPortalUrl and reviewerPortalPassword must be set — run coordinator setup first'
+		);
+	}
+
 	const total = 5;
 	const step = (n: number, title: string, detail?: string) =>
 		onStep ? onStep(n, total, title, detail) : Promise.resolve();
 
-	await step(1, 'Reviewer login', env.reviewerUser);
-	await loginWordPress(page, env.reviewerUser, env.reviewerPass, '/reviews/mark/');
+	// Reviewers authenticate via the token link, not wp-login.php
+	await step(1, 'Reviewer portal login', 'Open token link and enter portal password');
+	await page.goto(ctx.reviewerPortalUrl);
+	await page.locator('#pr-root').waitFor({ state: 'visible', timeout: 30_000 });
+	const passwordField = page.locator('#pr-portal-password');
+	await expect(passwordField).toBeVisible({ timeout: 20_000 });
+	await passwordField.fill(ctx.reviewerPortalPassword);
+	await page.getByRole('button', { name: 'Open review portal' }).click();
 
 	await step(2, 'Assignments', 'Your assignments list');
-	await gotoReviewerHash(page, '/');
-	await expect(page.getByRole('heading', { name: 'Your assignments' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Your assignments' })).toBeVisible({
+		timeout: 30_000,
+	});
 
 	await step(3, 'Open assignment', ctx.projectTitle);
 	const assignmentLink = page
@@ -317,6 +380,10 @@ export async function runReviewerMarking(
 	await expect(studentRow).toContainText('Draft');
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 async function addWizardStudent(
 	page: Page,
 	student: { regNo: string; name: string }
@@ -326,6 +393,38 @@ async function addWizardStudent(
 	await page.getByTestId('pr-wizard-student-name').fill(student.name);
 	await page.getByRole('button', { name: 'Add to project' }).click();
 	await expect(page.getByText(student.regNo)).toBeVisible({ timeout: 20_000 });
+}
+
+/**
+ * Uploads a session-enrol CSV with students C + D (includes guide_emp_id and
+ * guide_name). Column names match the CsvImportMapper auto-detect keys exactly.
+ * The panel must already exist before calling this.
+ */
+async function uploadSessionEnrolCsv(page: Page, ctx: JourneyContext): Promise<void> {
+	const { runId, panelName, studentC, studentD } = ctx;
+	const csvContent = [
+		'reg_no,panel,name,batch,guide_emp_id,guide_name',
+		`${studentC.regNo},${panelName},${studentC.name},2025,EMP-${runId}-C,Dr. Guide C`,
+		`${studentD.regNo},${panelName},${studentD.name},2025,EMP-${runId}-D,Dr. Guide D`,
+	].join('\n');
+
+	const tmpPath = path.join(os.tmpdir(), `e2e-enrol-${runId}.csv`);
+	fs.writeFileSync(tmpPath, csvContent, 'utf8');
+
+	try {
+		const fileInput = page.locator('input[accept=".csv,text/csv"]');
+		await fileInput.setInputFiles(tmpPath);
+		// Column names match the auto-detect keys — no manual mapping needed
+		await expect(
+			page.getByRole('button', { name: 'Import students' })
+		).toBeVisible({ timeout: 15_000 });
+		await page.getByRole('button', { name: 'Import students' }).click();
+		await expect(page.getByText(/Enrolment import:/)).toBeVisible({
+			timeout: 20_000,
+		});
+	} finally {
+		fs.unlinkSync(tmpPath);
+	}
 }
 
 export function toWalkthroughState(ctx: JourneyContext): WalkthroughJourneyState {
@@ -340,5 +439,9 @@ export function toWalkthroughState(ctx: JourneyContext): WalkthroughJourneyState
 		reviewerDisplayName: ctx.reviewerDisplayName,
 		studentA: ctx.studentA,
 		studentB: ctx.studentB,
+		studentC: ctx.studentC,
+		studentD: ctx.studentD,
+		reviewerPortalUrl: ctx.reviewerPortalUrl ?? '',
+		reviewerPortalPassword: ctx.reviewerPortalPassword ?? '',
 	};
 }

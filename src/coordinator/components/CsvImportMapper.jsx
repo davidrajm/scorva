@@ -44,23 +44,6 @@ const IMPORT_TYPE_CONFIG = {
 		submitLabel: 'Import students',
 		supportsDuplicates: false,
 	},
-	'faculty-accounts': {
-		title: 'Import faculty accounts from CSV',
-		description:
-			'Map employee ID, name, and email. Accounts are created without sending email.',
-		required: [
-			{ key: 'empId', label: 'Employee ID' },
-			{ key: 'name', label: 'Name' },
-			{ key: 'email', label: 'Email' },
-		],
-		optional: [
-			{ key: 'designation', label: 'Designation' },
-			{ key: 'gender', label: 'Gender' },
-		],
-		submitLabel: 'Import accounts',
-		supportsDuplicates: true,
-		duplicateKeys: [ 'empId', 'email' ],
-	},
 	'panel-reviewers': {
 		title: 'Import panel reviewers from CSV',
 		description:
@@ -336,11 +319,6 @@ export function CsvImportMapper( {
 					rows: mappedRows,
 					import_mode: policy,
 				} );
-			} else if ( importType === 'faculty-accounts' ) {
-				result = await post( '/faculty-accounts/import', {
-					rows: mappedRows,
-					duplicate_policy: policy,
-				} );
 			} else {
 				result = await post( '/students/import', {
 					rows: mappedRows,
@@ -356,8 +334,6 @@ export function CsvImportMapper( {
 				const clearedNote =
 					cleared > 0 ? `, ${ cleared } removed` : '';
 				message = `Reviewer import: ${ result.imported ?? 0 } added, ${ result.updated ?? 0 } updated${ clearedNote }, ${ result.failed ?? 0 } failed.`;
-			} else if ( importType === 'faculty-accounts' ) {
-				message = `Faculty import: ${ result.imported ?? 0 } added, ${ result.updated ?? 0 } updated, ${ result.skipped ?? 0 } skipped, ${ result.failed ?? 0 } failed.`;
 			} else {
 				const imported = result.imported ?? 0;
 				const updated = result.updated ?? 0;
@@ -428,13 +404,7 @@ export function CsvImportMapper( {
 	const proceedAfterReviewerConflictCheck = ( mappedRows ) => {
 		let duplicates = [];
 		if ( typeConfig.supportsDuplicates ) {
-			if ( importType === 'faculty-accounts' ) {
-				const empDupes = findDuplicateFieldValues( mappedRows, 'empId' );
-				const emailDupes = findDuplicateFieldValues( mappedRows, 'email' );
-				duplicates = [ ...empDupes, ...emailDupes ];
-			} else {
-				duplicates = findDuplicateRegNos( mappedRows );
-			}
+			duplicates = findDuplicateRegNos( mappedRows );
 		}
 		if ( duplicates.length > 0 && ! showDuplicateChoice ) {
 			setPendingRows( mappedRows );

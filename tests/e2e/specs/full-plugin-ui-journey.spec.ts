@@ -1,5 +1,4 @@
 import { test } from '@playwright/test';
-import { loginWordPress } from '../helpers/auth';
 import { loadE2eEnv, missingEnvMessage } from '../helpers/env';
 import {
 	createJourneyContext,
@@ -38,6 +37,7 @@ test('coordinator: registry, create project, complete wizard', async ({ page }) 
 test('reviewer: open assignment and save a mark', async ({ page }) => {
 	const env = loadE2eEnv();
 	test.skip(!env || !ctx.sessionId, 'Wizard must create a project first');
+	test.skip(!ctx.reviewerPortalUrl, 'Portal URL not captured — coordinator setup must have completed');
 	await runReviewerMarking(page, env!, ctx);
 });
 

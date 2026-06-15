@@ -205,8 +205,10 @@ export function CloseSession() {
 			setSuccess( 'Project closed. Reviewer portal access is suspended.' );
 			setDialogOpen( false );
 			await loadPreview();
-		} catch {
-			setError( 'Failed to close project.' );
+		} catch ( err ) {
+			setError(
+				parseApiErrorMessage( err, 'Failed to close project.' )
+			);
 		} finally {
 			setClosing( false );
 		}
@@ -421,11 +423,15 @@ export function CloseSession() {
 						Delete project
 					</h2>
 					<div className="mt-4 space-y-4 rounded-md border border-danger/30 bg-surface-raised p-6">
+						{ ! isClosed && (
+							<Notice variant="warning">
+								This project is not closed. Close the project first to suspend reviewer portal access and run pre-close checks before deleting.
+							</Notice>
+						) }
 						<p className="text-sm text-text">
 							Permanently remove this project and all of its data
 							(roster, panels, review rounds, rubrics, assignments,
-							marks, freezes, and project-scoped audit). WordPress
-							user accounts are not deleted.
+							marks, freezes, and project-scoped audit).
 						</p>
 						<p className="text-sm text-text-muted">
 							{ isClosed
@@ -474,17 +480,32 @@ export function CloseSession() {
 				consequences={ [
 					'Student roster enrolment, panels, review rounds, rubrics, and assignments for this project will be permanently removed.',
 					'Draft mark rows, panel freezes, unfreeze requests, and project-scoped audit entries will be deleted.',
-					'WordPress user accounts are not deleted.',
 				] }
 				confirmLabel={ deleting ? 'Deleting…' : 'Delete project' }
 				confirmVariant="destructive"
-				confirmDisabled={ deleting }
+				confirmDisabled={ deleting || ! phraseMatchesDelete }
 				onCancel={ closeDeleteDialogs }
 				onConfirm={ handleDeleteProject }
 			>
-				{ deleteError ? (
-					<p className="text-sm text-danger">{ deleteError }</p>
-				) : null }
+				<div className="space-y-2 text-sm text-text-muted">
+					<p>
+						Type the exact project title{ ' ' }
+						<strong className="text-text">{ sessionTitle }</strong>{ ' ' }
+						to confirm.
+					</p>
+					<input
+						type="text"
+						className="w-full rounded-md border border-border bg-surface px-3 py-2 text-text"
+						value={ deletePhrase }
+						onChange={ ( e ) => setDeletePhrase( e.target.value ) }
+						autoComplete="off"
+						data-testid="pr-delete-project-confirm-input"
+						aria-label="Type project title to confirm deletion"
+					/>
+					{ deleteError ? (
+						<p className="text-danger">{ deleteError }</p>
+					) : null }
+				</div>
 			</ConfirmDialog>
 
 			<ConfirmDialog
@@ -498,7 +519,6 @@ export function CloseSession() {
 					'All entered marks and derived scores for this project will be permanently removed.',
 					'Student roster, panels, review rounds, rubrics, assignments, freezes, and project-scoped audit will be deleted.',
 					'Reviewer portal credentials for this project are permanently removed.',
-					'WordPress user accounts are not deleted.',
 				] }
 				confirmLabel={
 					deleting ? 'Deleting…' : 'Delete project and scores'

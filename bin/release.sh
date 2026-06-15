@@ -118,10 +118,10 @@ fi
 if [[ "$SKIP_BUILD" -eq 0 ]]; then
     if [[ -f package-lock.json ]]; then
         echo "==> npm ci && npm run build"
-        npm ci
+        npm ci --loglevel=error --no-audit
     else
         echo "==> npm install && npm run build"
-        npm install
+        npm install --loglevel=error --no-audit
     fi
     npm run build
 else
@@ -132,8 +132,8 @@ else
     fi
 fi
 
-echo "==> composer install --no-dev --optimize-autoloader"
-composer install --no-dev --optimize-autoloader
+echo "==> composer install --no-dev --optimize-autoloader --ignore-platform-reqs"
+composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
 restore_dev_deps() {
     if [[ "$NO_RESTORE_DEV" -eq 0 ]]; then
@@ -173,6 +173,8 @@ PARENT="$(dirname "$ROOT")"
         -x "${PLUGIN_SLUG}/_bmad/*" \
         -x "${PLUGIN_SLUG}/.git/*" \
         -x "${PLUGIN_SLUG}/.github/*" \
+        -x "${PLUGIN_SLUG}/.claude/*" \
+        -x "${PLUGIN_SLUG}/.gitignore" \
         -x "${PLUGIN_SLUG}/dist/*" \
         -x "${PLUGIN_SLUG}/src/*" \
         -x "${PLUGIN_SLUG}/.phpunit.result.cache" \
@@ -186,6 +188,7 @@ PARENT="$(dirname "$ROOT")"
         -x "${PLUGIN_SLUG}/playwright.config.ts" \
         -x "${PLUGIN_SLUG}/browser-sync.config.js" \
         -x "${PLUGIN_SLUG}/phpunit.xml" \
+        -x "${PLUGIN_SLUG}/docs/stories/*" \
         -x "${PLUGIN_SLUG}/docs/sop/screenshots/202*/*" \
         -x "${PLUGIN_SLUG}/docs/sop/screenshots/202*/*/*"
 )

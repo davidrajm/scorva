@@ -75,16 +75,4 @@ final class ReviewerProvisionServiceTest extends TestCase
         $this->assertSame(1, $result['skipped']);
     }
 
-    public function test_provision_reviewer_account_creates_wp_user(): void
-    {
-        $service = new ReviewerProvisionService();
-        $result = $service->provision_reviewer_account('faculty@example.com', 'Faculty Member', 'EMP001');
-
-        $this->assertIsArray($result);
-        $this->assertTrue($result['created']);
-        $this->assertGreaterThan(0, $result['user_id']);
-
-        $user = get_user_by('email', 'faculty@example.com');
-        $this->assertNotFalse($user);
-    }
 }

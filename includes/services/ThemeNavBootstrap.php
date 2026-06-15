@@ -187,7 +187,7 @@ final class ThemeNavBootstrap
         update_option(self::NOTICE_DISMISS_OPTION, true);
 
         if (function_exists('wp_safe_redirect')) {
-            wp_safe_redirect(admin_url('options-general.php?page=scorva-settings'));
+            wp_safe_redirect(admin_url('admin.php?page=scorva-general'));
         }
     }
 

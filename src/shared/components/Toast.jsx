@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useRef, useState } from '@wordpress/element';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from '@wordpress/element';
 import { createPortal } from 'react-dom';
 
 const AUTO_DISMISS_MS = 4500;
@@ -68,10 +68,29 @@ export function useToast() {
 
 function ToastItem({ t, onDismiss }) {
 	const cfg = VARIANT_CONFIG[t.variant] ?? VARIANT_CONFIG.info;
+	const timerRef = useRef(null);
+
+	const startTimer = useCallback(() => {
+		timerRef.current = setTimeout(() => onDismiss(t.id), AUTO_DISMISS_MS);
+	}, [t.id, onDismiss]);
+
+	const clearTimer = useCallback(() => {
+		if (timerRef.current) {
+			clearTimeout(timerRef.current);
+			timerRef.current = null;
+		}
+	}, []);
+
+	useEffect(() => {
+		startTimer();
+		return clearTimer;
+	}, [startTimer, clearTimer]);
 
 	return (
 		<div
 			role="status"
+			onMouseEnter={clearTimer}
+			onMouseLeave={startTimer}
 			style={{
 				display: 'flex',
 				alignItems: 'flex-start',
@@ -126,9 +145,8 @@ export function ToastProvider({ children }) {
 		({ variant = 'info', message }) => {
 			const id = nextId.current++;
 			setToasts((prev) => [...prev, { id, variant, message }]);
-			setTimeout(() => dismiss(id), AUTO_DISMISS_MS);
 		},
-		[dismiss]
+		[]
 	);
 
 	const container =

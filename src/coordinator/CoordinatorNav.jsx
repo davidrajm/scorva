@@ -51,13 +51,7 @@ const LIFECYCLE_NAV = [
 
 const GLOBAL_NAV = [
 	{ to: '/', label: 'Dashboard', icon: 'dashboard', end: true },
-	{
-		to: '/faculty',
-		label: 'Faculty accounts',
-		icon: 'users',
-		end: false,
-		requiresAssignReviewers: true,
-	},
+	{ to: '/unfreeze-requests', label: 'Unfreeze Requests', icon: 'unlock', end: true, requiresManage: true },
 ];
 
 function sessionIdFromPath( pathname ) {
@@ -93,12 +87,19 @@ export function CoordinatorNav( { collapsed = false } ) {
 	const sessionId = sessionIdFromPath( pathname );
 	const [ sessionTitle, setSessionTitle ] = useState( '' );
 	const canAssignReviewers = window.prAppData?.canAssignReviewers !== false;
+	const canManage = Boolean( window.prAppData?.canManageProjects );
 	const canViewClose =
 		window.prAppData?.canCloseProject ||
 		window.prAppData?.canManageProjects;
-	const globalNavItems = GLOBAL_NAV.filter(
-		( item ) => ! item.requiresAssignReviewers || canAssignReviewers
-	);
+	const globalNavItems = GLOBAL_NAV.filter( ( item ) => {
+		if ( item.requiresAssignReviewers && ! canAssignReviewers ) {
+			return false;
+		}
+		if ( item.requiresManage && ! canManage ) {
+			return false;
+		}
+		return true;
+	} );
 
 	useEffect( () => {
 		if ( ! sessionId ) {

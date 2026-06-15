@@ -576,7 +576,8 @@ final class Rest_Sessions
         }
 
         $sessions = new SessionRepository();
-        if ($sessions->find_enrolment($session_id, $student_id) === null) {
+        $enrolment = $sessions->find_enrolment($session_id, $student_id);
+        if ($enrolment === null) {
             return new \WP_Error(
                 'pr_enrolment_not_found',
                 __('Student is not enrolled in this project.', 'scorva'),
@@ -601,6 +602,19 @@ final class Rest_Sessions
                         'pr_panel_not_found',
                         __('Panel not found in this project.', 'scorva'),
                         ['status' => 404]
+                    );
+                }
+            }
+            $current_panel_id = isset($enrolment['panel_id']) && $enrolment['panel_id'] !== null
+                ? (int) $enrolment['panel_id']
+                : null;
+            if ($panel_id !== $current_panel_id) {
+                $has_scores = (new MarkRepository())->student_has_numeric_scores_in_session($session_id, $student_id);
+                if ($has_scores) {
+                    return new \WP_Error(
+                        'pr_panel_change_blocked',
+                        __('This student has scores recorded. To move them to a different panel, go to the Review Assignments step, select the review round, and use the reassignment action there.', 'scorva'),
+                        ['status' => 409]
                     );
                 }
             }

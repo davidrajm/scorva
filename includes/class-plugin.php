@@ -34,6 +34,7 @@ final class Plugin
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-auth.php';
         require_once PR_PLUGIN_DIR . 'includes/rest/class-rest-bootstrap.php';
         require_once PR_PLUGIN_DIR . 'includes/admin/class-admin-settings.php';
+        require_once PR_PLUGIN_DIR . 'includes/admin/class-admin-menu.php';
         require_once PR_PLUGIN_DIR . 'includes/theme-nav.php';
         require_once PR_PLUGIN_DIR . 'includes/services/ThemeNavBootstrap.php';
         \ProjectReviews\Services\ThemeNavBootstrap::register_hooks();
@@ -44,6 +45,7 @@ final class Plugin
         self::maybe_flush_rewrites();
         add_action('rest_api_init', [Rest_Bootstrap::class, 'register_routes']);
         add_action('admin_menu', [\ProjectReviews\Admin\Admin_Settings::class, 'register']);
+        add_action('admin_menu', [\ProjectReviews\Admin\Admin_Menu::class, 'register']);
     }
 
     public static function activate(): void

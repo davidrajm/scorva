@@ -199,6 +199,39 @@ final class MarkRepository
         return is_array($rows) ? $rows : [];
     }
 
+    public function is_review_frozen_for_user(int $session_id, int $review_id, int $user_id): bool
+    {
+        if ($session_id <= 0 || $review_id <= 0 || $user_id <= 0) {
+            return false;
+        }
+
+        $total = (int) $this->wpdb->get_var(
+            $this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->marks_table}
+                 WHERE session_id = %d AND review_id = %d AND reviewer_user_id = %d",
+                $session_id,
+                $review_id,
+                $user_id
+            )
+        );
+        if ($total === 0) {
+            return false;
+        }
+
+        $non_submitted = (int) $this->wpdb->get_var(
+            $this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->marks_table}
+                 WHERE session_id = %d AND review_id = %d AND reviewer_user_id = %d AND status != %s",
+                $session_id,
+                $review_id,
+                $user_id,
+                self::STATUS_SUBMITTED
+            )
+        );
+
+        return $non_submitted === 0;
+    }
+
     public function is_student_frozen_for_reviewer(
         int $session_id,
         int $review_id,
@@ -401,6 +434,17 @@ final class MarkRepository
     public function delete_all_for_review(int $review_id): int
     {
         $deleted = $this->wpdb->delete($this->marks_table, ['review_id' => $review_id], ['%d']);
+
+        return $deleted !== false ? (int) $deleted : 0;
+    }
+
+    public function delete_all_for_student_in_review(int $review_id, int $student_id): int
+    {
+        $deleted = $this->wpdb->delete(
+            $this->marks_table,
+            ['review_id' => $review_id, 'student_id' => $student_id],
+            ['%d', '%d']
+        );
 
         return $deleted !== false ? (int) $deleted : 0;
     }

@@ -88,6 +88,8 @@ final class Rest_Reviewer_Assignments
         $reviews = new ReviewRepository();
 
         $panels = new PanelRepository();
+        $marks = new MarkRepository();
+        $panel_freeze = new PanelFreezeRepository();
         $assignments = [];
         /** @var array<int, list<array<string, mixed>>> */
         $panel_reviewers_by_review = [];
@@ -149,6 +151,8 @@ final class Rest_Reviewer_Assignments
                             $panel_id,
                             $user_id
                         ),
+                        'review_frozen' => $marks->is_review_frozen_for_user($session_id, $review_id, $user_id),
+                        'panel_scores_frozen' => $panel_id > 0 && $panel_freeze->is_frozen($review_id, $panel_id),
                     ];
                 }
             }

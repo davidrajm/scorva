@@ -121,10 +121,11 @@ final class PluginSettings
             'login_url' => $login,
             'notify_rubric_open' => !empty($input['notify_rubric_open']),
             'notify_session_closed' => !empty($input['notify_session_closed']),
-            'faculty_bridge_enabled' => !empty($input['faculty_bridge_enabled']),
             'theme_nav_auto_bootstrap_enabled' => !empty($input['theme_nav_auto_bootstrap_enabled']),
             'theme_nav_menu_label' => $theme_nav_label,
             'theme_nav_bridge_enabled' => !empty($input['theme_nav_bridge_enabled']),
+            'global_logo_id' => max(0, (int) ($input['global_logo_id'] ?? 0)),
+            'reviewer_session_ttl_days' => self::sanitize_session_ttl((int) ($input['reviewer_session_ttl_days'] ?? 7)),
         ];
     }
 
@@ -243,11 +244,6 @@ final class PluginSettings
         return !empty(self::get()['notify_session_closed']);
     }
 
-    public static function faculty_bridge_enabled(): bool
-    {
-        return !empty(self::get()['faculty_bridge_enabled']);
-    }
-
     public static function theme_nav_auto_bootstrap_enabled(): bool
     {
         $settings = self::get();
@@ -283,6 +279,33 @@ final class PluginSettings
         }
 
         return $label;
+    }
+
+    public static function global_logo_id(): int
+    {
+        return max(0, (int) (self::get()['global_logo_id'] ?? 0));
+    }
+
+    public static function global_logo_url(): string
+    {
+        $id = self::global_logo_id();
+        if ($id <= 0 || !function_exists('wp_get_attachment_image_url')) {
+            return '';
+        }
+
+        $url = wp_get_attachment_image_url($id, 'full');
+
+        return is_string($url) ? $url : '';
+    }
+
+    public static function reviewer_session_ttl_days(): int
+    {
+        return self::sanitize_session_ttl((int) (self::get()['reviewer_session_ttl_days'] ?? 7));
+    }
+
+    public static function reviewer_session_ttl_seconds(): int
+    {
+        return self::reviewer_session_ttl_days() * 86400;
     }
 
     public static function delete_data_on_uninstall(): bool
@@ -623,6 +646,12 @@ final class PluginSettings
         return $normalized !== [] ? $normalized : $defaults['letterhead']['blocks'];
     }
 
+    private static function sanitize_session_ttl(int $days): int
+    {
+        $valid = [1, 3, 7, 14, 30];
+        return in_array($days, $valid, true) ? $days : 7;
+    }
+
     private static function sanitize_plain_text(string $value): string
     {
         $value = trim($value);
@@ -645,10 +674,19 @@ final class PluginSettings
             'login_url' => '',
             'notify_rubric_open' => false,
             'notify_session_closed' => false,
-            'faculty_bridge_enabled' => false,
             'theme_nav_auto_bootstrap_enabled' => true,
             'theme_nav_menu_label' => self::DEFAULT_THEME_NAV_MENU_LABEL,
             'theme_nav_bridge_enabled' => true,
+            'global_logo_id' => 0,
+            'reviewer_session_ttl_days' => 7,
+            'default_label_sr_no'             => 'Sr. No.',
+            'default_label_reg_no'            => 'Reg No',
+            'default_label_student'           => 'Student',
+            'default_label_guide'             => 'Guide',
+            'default_label_final_marks'       => 'Final Marks',
+            'default_label_panel_coordinator' => 'Panel coordinator',
+            'default_label_hod'               => 'Head of the Department',
+            'default_label_reviewer_pattern'  => 'Reviewer {n}',
         ];
     }
 }

@@ -5,7 +5,7 @@
 
 import { cloneElement, useEffect } from '@wordpress/element';
 import { post } from './api';
-import { getAppDisplayName } from './appBranding';
+import { getAppDisplayName, getAppShortName } from './appBranding';
 import { Icon } from './components/NavIcon';
 import { IconRailTooltip } from './components/IconRailTooltip';
 import {
@@ -22,6 +22,23 @@ function getCurrentUser() {
 	return window.prAppData?.currentUser ?? null;
 }
 
+function userInitials( name ) {
+	return name
+		.split( /\s+/ )
+		.filter( Boolean )
+		.slice( 0, 2 )
+		.map( ( w ) => w[ 0 ].toUpperCase() )
+		.join( '' );
+}
+
+function UserAvatar( { name } ) {
+	return (
+		<div className="pr-user-avatar" aria-hidden="true">
+			{ userInitials( name ) }
+		</div>
+	);
+}
+
 function UserIdentity() {
 	const user = getCurrentUser();
 	if ( ! user ) {
@@ -33,19 +50,54 @@ function UserIdentity() {
 
 	return (
 		<div
-			className="pr-user-identity min-w-0 text-right"
+			className="pr-user-identity flex items-center gap-2.5"
 			aria-label={ `Signed in as ${ displayName }` }
 		>
-			<p className="truncate text-sm font-medium text-text">{ displayName }</p>
-			{ email ? (
-				<p
-					className="truncate text-xs text-text-muted"
-					title={ email }
-				>
-					{ email }
-				</p>
-			) : null }
+			<div className="min-w-0 text-right">
+				<p className="truncate text-sm font-medium text-text">{ displayName }</p>
+				{ email ? (
+					<p className="truncate text-xs text-text-muted" title={ email }>
+						{ email }
+					</p>
+				) : null }
+			</div>
+			<UserAvatar name={ displayName } />
 		</div>
+	);
+}
+
+function AppFooter() {
+	const shortName = getAppShortName();
+	const displayName = getAppDisplayName();
+	const version = window.prAppData?.pluginVersion;
+	const pluginUri = window.prAppData?.pluginUri;
+	const year = new Date().getFullYear();
+
+	return (
+		<footer className="pr-footer">
+			<div className="pr-footer-inner">
+				<span className="pr-footer-brand">
+					{ pluginUri ? (
+						<a
+							href={ pluginUri }
+							className="pr-footer-link"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							{ shortName }
+						</a>
+					) : (
+						shortName
+					) }
+					{ version ? (
+						<span className="pr-footer-version">v{ version }</span>
+					) : null }
+				</span>
+				<span className="pr-footer-copy">
+					{ `© ${ year } ${ displayName }` }
+				</span>
+			</div>
+		</footer>
 	);
 }
 
@@ -123,8 +175,9 @@ function SidebarCollapseButton( { collapsed, onClick } ) {
 	return <IconRailTooltip label={ label }>{ button }</IconRailTooltip>;
 }
 
-export function AppShell( { variant = 'coordinator', children, sidebar, topNav } ) {
+export function AppShell( { variant = 'coordinator', children, sidebar, topNav, notificationBell } ) {
 	const isCoordinator = variant === 'coordinator';
+	const isReviewer = variant === 'reviewer';
 	const isLanding = variant === 'landing';
 	const showIdentity = Boolean( getCurrentUser() ) && ! isLanding;
 	const appHomeUrl = window.prAppData?.appHomeUrl;
@@ -146,7 +199,7 @@ export function AppShell( { variant = 'coordinator', children, sidebar, topNav }
 	} = sidebarLayout;
 
 	useEffect( () => {
-		if ( ! isCoordinator || isLg ) {
+		if ( ( ! isCoordinator && ! isReviewer ) || isLg ) {
 			return undefined;
 		}
 		const onKeyDown = ( event ) => {
@@ -171,7 +224,8 @@ export function AppShell( { variant = 'coordinator', children, sidebar, topNav }
 		? cloneElement( sidebar, { collapsed: isLg && collapsed } )
 		: null;
 
-	const showDrawerBackdrop = isCoordinator && ! isLg && drawerOpen;
+	const hasSidebar = Boolean( sidebar );
+	const showDrawerBackdrop = hasSidebar && ! isLg && drawerOpen;
 	const sidebarClasses = [
 		'pr-sidebar',
 		'pr-scroll',
@@ -191,7 +245,7 @@ export function AppShell( { variant = 'coordinator', children, sidebar, topNav }
 				<header className="pr-topbar">
 					<div className="pr-topbar-inner">
 						<div className="pr-topbar-start">
-							{ isCoordinator ? (
+							{ hasSidebar && ! isLg ? (
 								<button
 									type="button"
 									className="pr-sidebar-menu-btn"
@@ -211,6 +265,7 @@ export function AppShell( { variant = 'coordinator', children, sidebar, topNav }
 							{ topNav ? topNav : null }
 						</div>
 						<div className="pr-topbar-actions flex shrink-0 items-center gap-3">
+							{ notificationBell ? notificationBell : null }
 							{ showIdentity ? <UserIdentity /> : null }
 							{ ! isLanding ? <AuthActions /> : null }
 						</div>
@@ -225,14 +280,14 @@ export function AppShell( { variant = 'coordinator', children, sidebar, topNav }
 							aria-label="Close navigation menu"
 						/>
 					) : null }
-					{ isCoordinator ? (
+					{ hasSidebar ? (
 						<nav
 							id="pr-sidebar-nav"
 							aria-label="Main"
 							className={ sidebarClasses }
 						>
 							<div className="pr-sidebar-inner">
-								{ isLg ? (
+								{ isCoordinator && isLg ? (
 									<div className="pr-sidebar-toolbar">
 										<SidebarCollapseButton
 											collapsed={ collapsed }
@@ -242,7 +297,7 @@ export function AppShell( { variant = 'coordinator', children, sidebar, topNav }
 								) : null }
 								{ sidebarNav }
 							</div>
-							{ isLg && ! collapsed ? (
+							{ isCoordinator && isLg && ! collapsed ? (
 								<button
 									type="button"
 									className="pr-sidebar-resize-handle"
@@ -265,6 +320,7 @@ export function AppShell( { variant = 'coordinator', children, sidebar, topNav }
 						{ children }
 					</main>
 				</div>
+				<AppFooter />
 			</div>
 		</>
 	);

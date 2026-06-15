@@ -157,6 +157,37 @@ const ICONS = {
 			d="M6.75 3v2.25M17.25 3v2.25M3 9.75h18M4.5 5.25h15a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5h-15a1.5 1.5 0 0 1-1.5-1.5v-12a1.5 1.5 0 0 1 1.5-1.5Z"
 		/>
 	),
+	email: (
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+		/>
+	),
+	person: (
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+		/>
+	),
+	scale: (
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 3v1.5M12 3l-3 3M12 3l3 3M3 9l3-3 3 3M15 9l3-3 3 3M3 9h18M3 9v9a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3V9"
+		/>
+	),
+	bell: (
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+		/>
+	),
+	dismiss: (
+		<path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+	),
 };
 
 export function Icon( { name, className = 'h-5 w-5 shrink-0' } ) {

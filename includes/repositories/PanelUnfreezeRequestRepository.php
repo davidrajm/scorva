@@ -180,6 +180,78 @@ final class PanelUnfreezeRequestRepository
     }
 
     /**
+     * All panel unfreeze requests submitted by a given user (both pending and granted).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function list_for_requester(int $user_id, int $limit = 50): array
+    {
+        $limit = max(1, min(50, $limit));
+        $sql = $this->wpdb->prepare(
+            "SELECT * FROM {$this->table}
+             WHERE requested_by_user_id = %d
+             ORDER BY requested_at DESC
+             LIMIT %d",
+            $user_id,
+            $limit
+        );
+        $rows = $this->wpdb->get_results($sql, 'ARRAY_A');
+
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($rows as $row) {
+            $session_id = (int) ($row['session_id'] ?? 0);
+            $review_id = (int) ($row['review_id'] ?? 0);
+            $panel_id = (int) ($row['panel_id'] ?? 0);
+
+            $session = $this->wpdb->get_row(
+                $this->wpdb->prepare(
+                    "SELECT title FROM {$this->sessions_table} WHERE id = %d",
+                    $session_id
+                ),
+                'ARRAY_A'
+            );
+            $review = $this->wpdb->get_row(
+                $this->wpdb->prepare(
+                    "SELECT label FROM {$this->reviews_table} WHERE id = %d",
+                    $review_id
+                ),
+                'ARRAY_A'
+            );
+            $panel = $this->wpdb->get_row(
+                $this->wpdb->prepare(
+                    "SELECT name FROM {$this->panels_table} WHERE id = %d",
+                    $panel_id
+                ),
+                'ARRAY_A'
+            );
+
+            $row['session_title'] = is_array($session) ? (string) ($session['title'] ?? '') : '';
+            $row['review_label'] = is_array($review) ? (string) ($review['label'] ?? '') : '';
+            $row['panel_name'] = is_array($panel) ? (string) ($panel['name'] ?? '') : '';
+
+            $out[] = [
+                'id' => (int) ($row['id'] ?? 0),
+                'session_id' => (int) ($row['session_id'] ?? 0),
+                'session_title' => (string) ($row['session_title'] ?? ''),
+                'review_id' => (int) ($row['review_id'] ?? 0),
+                'review_label' => (string) ($row['review_label'] ?? ''),
+                'panel_id' => (int) ($row['panel_id'] ?? 0),
+                'panel_name' => (string) ($row['panel_name'] ?? ''),
+                'reason' => (string) ($row['reason'] ?? ''),
+                'status' => (string) ($row['status'] ?? self::STATUS_PENDING),
+                'requested_at' => (string) ($row['requested_at'] ?? ''),
+                'resolved_at' => (string) ($row['resolved_at'] ?? ''),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public function grant(int $id, int $resolved_by_user_id): ?array

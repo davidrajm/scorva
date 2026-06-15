@@ -989,6 +989,79 @@ final class MarkService
     }
 
     /**
+     * Grant a reviewer unfreeze request as a coordinator (bypasses panel-head check).
+     *
+     * @return array{granted: bool, marks_reverted: int}|\WP_Error
+     */
+    public function grant_unfreeze_by_coordinator(int $request_id, int $coordinator_user_id): array|\WP_Error
+    {
+        $request = $this->unfreeze_requests->find_by_id($request_id);
+        if ($request === null) {
+            return new \WP_Error(
+                'unfreeze_request_not_found',
+                __('Unfreeze request not found.', 'scorva'),
+                ['status' => 404]
+            );
+        }
+
+        if ((string) ($request['status'] ?? '') !== UnfreezeRequestRepository::STATUS_PENDING) {
+            return new \WP_Error(
+                'unfreeze_request_not_pending',
+                __('This unfreeze request is no longer pending.', 'scorva'),
+                ['status' => 400]
+            );
+        }
+
+        $session_id = (int) ($request['session_id'] ?? 0);
+        $review_id = (int) ($request['review_id'] ?? 0);
+        $panel_id = (int) ($request['panel_id'] ?? 0);
+        $reviewer_user_id = (int) ($request['reviewer_user_id'] ?? 0);
+
+        $lock_error = $this->coordinator_lock_error_if_locked($review_id);
+        if ($lock_error instanceof \WP_Error) {
+            return $lock_error;
+        }
+
+        $reverted = $this->unfreeze_review_marks($session_id, $review_id, $panel_id, $reviewer_user_id);
+        if ($reverted instanceof \WP_Error) {
+            return $reverted;
+        }
+
+        $granted = $this->unfreeze_requests->grant($request_id, $coordinator_user_id);
+        if ($granted === null) {
+            return new \WP_Error(
+                'unfreeze_request_not_pending',
+                __('This unfreeze request is no longer pending.', 'scorva'),
+                ['status' => 400]
+            );
+        }
+
+        $audit = new AuditService();
+        $audit->log(
+            'unfreeze_granted',
+            'unfreeze_request',
+            $request_id,
+            null,
+            json_encode(
+                [
+                    'session_id' => $session_id,
+                    'review_id' => $review_id,
+                    'panel_id' => $panel_id,
+                    'reviewer_user_id' => $reviewer_user_id,
+                    'granted_by' => 'coordinator',
+                ],
+                JSON_THROW_ON_ERROR
+            ),
+            $coordinator_user_id
+        );
+
+        return [
+            'granted' => true,
+            'marks_reverted' => $reverted,
+        ];
+    }
+
+    /**
      * @return int|\WP_Error Number of mark rows reverted to draft.
      */
     public function unfreeze_review_marks(

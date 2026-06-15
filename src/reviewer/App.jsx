@@ -2,12 +2,13 @@ import { useEffect, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 import { HashRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AppShell } from '../shared/AppShell';
-import { ReviewerNav } from './ReviewerNav';
+import { ReviewerSidebarNav, ReviewerNotificationBell } from './ReviewerSidebarNav';
 import { configureApi, get } from '../shared/api';
 import { Notice, ContentLoadingRegion } from '../shared/components';
 import { MarkingGrid } from './components/MarkingGrid';
 import { MarkAssignments } from './pages/MarkAssignments';
 import { PanelReportPage } from './pages/PanelReportPage';
+import { UnfreezeRequestsPage } from './pages/UnfreezeRequestsPage';
 import { PortalLogin } from './PortalLogin';
 
 function applyPortalIdentity( context ) {
@@ -15,6 +16,7 @@ function applyPortalIdentity( context ) {
 		window.prAppData = {};
 	}
 	window.prAppData.portalMode = true;
+	window.prAppData.isPanelHead = Boolean( context?.reviewer?.is_panel_head );
 	window.prAppData.currentUser = {
 		id: context?.reviewer?.id ?? 0,
 		displayName:
@@ -114,7 +116,7 @@ export function ReviewerApp() {
 
 	return (
 		<HashRouter>
-			<AppShell variant="reviewer" topNav={ <ReviewerNav /> }>
+			<AppShell variant="reviewer" sidebar={ <ReviewerSidebarNav /> } notificationBell={ <ReviewerNotificationBell /> }>
 				<Routes>
 					<Route path="/" element={ <MarkAssignments /> } />
 					<Route
@@ -124,6 +126,10 @@ export function ReviewerApp() {
 					<Route
 						path="/panel-report/:sessionId/:reviewId/:panelId"
 						element={ <PanelReportPage /> }
+					/>
+					<Route
+						path="/unfreeze-requests"
+						element={ <UnfreezeRequestsPage /> }
 					/>
 					<Route path="*" element={ <Navigate to="/" replace /> } />
 				</Routes>

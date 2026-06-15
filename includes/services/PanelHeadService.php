@@ -39,15 +39,6 @@ final class PanelHeadService
         }
 
         if ($is_head) {
-            $user_id = isset($reviewer['user_id']) ? (int) $reviewer['user_id'] : 0;
-            if ($user_id <= 0) {
-                return new \WP_Error(
-                    'panel_head_requires_account',
-                    __('A linked account is required before designating a panel coordinator.', 'scorva'),
-                    ['status' => 400]
-                );
-            }
-
             $this->panels->clear_panel_heads($panel_id);
             $this->panels->set_reviewer_panel_head($reviewer_id, true);
 

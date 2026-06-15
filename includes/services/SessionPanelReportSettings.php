@@ -18,7 +18,7 @@ final class SessionPanelReportSettings
      */
     public static function get(int $session_id): array
     {
-        $defaults = PluginSettings::default_panel_report_pdf();
+        $defaults = self::build_defaults();
         if ($session_id <= 0) {
             return $defaults;
         }
@@ -37,7 +37,47 @@ final class SessionPanelReportSettings
             return PluginSettings::merge_panel_report_pdf($defaults, $legacy);
         }
 
-        return $defaults;
+        return self::apply_global_logo($defaults);
+    }
+
+    /**
+     * Build PDF defaults, overlaying the admin-configured default labels onto
+     * the static structure so new sessions inherit site-wide label settings.
+     *
+     * @return array<string, mixed>
+     */
+    private static function build_defaults(): array
+    {
+        $pdf = PluginSettings::default_panel_report_pdf();
+        if (!function_exists('get_option')) {
+            return $pdf;
+        }
+
+        $s = PluginSettings::get();
+
+        $flat_map = [
+            'default_label_sr_no'             => ['table', 'sr_no_column_header'],
+            'default_label_reg_no'            => ['table', 'reg_no_column_header'],
+            'default_label_student'           => ['table', 'student_column_header'],
+            'default_label_guide'             => ['table', 'guide_column_header'],
+            'default_label_final_marks'       => ['table', 'final_marks_column_header'],
+            'default_label_panel_coordinator' => ['signatures', 'panel_coordinator_label'],
+            'default_label_reviewer_pattern'  => ['signatures', 'reviewer_label_pattern'],
+        ];
+
+        foreach ($flat_map as $key => [$section, $field]) {
+            $val = trim((string) ($s[$key] ?? ''));
+            if ($val !== '') {
+                $pdf[$section][$field] = $val;
+            }
+        }
+
+        $hod_label = trim((string) ($s['default_label_hod'] ?? ''));
+        if ($hod_label !== '') {
+            $pdf['signatures']['hod']['label'] = $hod_label;
+        }
+
+        return $pdf;
     }
 
     public static function is_settings_frozen(int $session_id): bool
@@ -149,6 +189,36 @@ final class SessionPanelReportSettings
         }
 
         delete_option(self::option_key($session_id));
+    }
+
+    /**
+     * Inject the global logo attachment ID into the first image block of the defaults
+     * when no per-session logo has been set yet.
+     *
+     * @param array<string, mixed> $defaults
+     * @return array<string, mixed>
+     */
+    private static function apply_global_logo(array $defaults): array
+    {
+        $global_id = PluginSettings::global_logo_id();
+        if ($global_id <= 0) {
+            return $defaults;
+        }
+
+        $blocks = is_array($defaults['letterhead']['blocks'] ?? null)
+            ? $defaults['letterhead']['blocks']
+            : [];
+
+        foreach ($blocks as $i => $block) {
+            if (is_array($block) && ($block['type'] ?? '') === 'image') {
+                $blocks[$i]['attachment_id'] = $global_id;
+                $defaults['letterhead']['blocks'] = $blocks;
+
+                return $defaults;
+            }
+        }
+
+        return $defaults;
     }
 
     /**

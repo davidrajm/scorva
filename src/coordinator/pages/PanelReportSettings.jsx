@@ -5,10 +5,10 @@ import {
 	Button,
 	ConfirmDialog,
 	ContentLoadingRegion,
-	Notice,
 	PageContentSkeleton,
 	PageHeader,
 	StatusChip,
+	useToast,
 } from '../../shared/components';
 import { PanelReportSettingsPreview } from '../components/PanelReportSettingsPreview';
 
@@ -123,7 +123,7 @@ export function PanelReportSettings() {
 	const [ freezing, setFreezing ] = useState( false );
 	const [ freezeOpen, setFreezeOpen ] = useState( false );
 	const [ unfreezeOpen, setUnfreezeOpen ] = useState( false );
-	const [ notice, setNotice ] = useState( null );
+	const toast = useToast();
 	const frozen = settingsFrozen || settings?.settings_frozen;
 
 	const load = useCallback( async () => {
@@ -168,7 +168,7 @@ export function PanelReportSettings() {
 				setLogoPreview( '' );
 			}
 		} catch {
-			setNotice( { type: 'error', message: 'Could not load panel report settings.' } );
+			toast( { variant: 'error', message: 'Could not load panel report settings.' } );
 		} finally {
 			setLoading( false );
 		}
@@ -252,7 +252,7 @@ export function PanelReportSettings() {
 				return { ...prev, letterhead: { blocks } };
 			} );
 		} catch {
-			setNotice( { type: 'error', message: 'Could not upload logo.' } );
+			toast( { variant: 'error', message: 'Could not upload logo.' } );
 		}
 		event.target.value = '';
 	};
@@ -283,16 +283,15 @@ export function PanelReportSettings() {
 			return;
 		}
 		setSaving( true );
-		setNotice( null );
 		const payload = trimReportMeta( settings );
 		setSettings( payload );
 		try {
 			await put( `sessions/${ sessionId }/panel-report-settings`, {
 				panel_report_pdf: payload,
 			} );
-			setNotice( { type: 'success', message: 'Panel report settings saved.' } );
+			toast( { variant: 'success', message: 'Panel report settings saved.' } );
 		} catch {
-			setNotice( { type: 'error', message: 'Could not save settings.' } );
+			toast( { variant: 'error', message: 'Could not save settings.' } );
 		} finally {
 			setSaving( false );
 		}
@@ -300,7 +299,6 @@ export function PanelReportSettings() {
 
 	const handleFreezeSettings = async () => {
 		setFreezing( true );
-		setNotice( null );
 		const payload = trimReportMeta( settings );
 		setSettings( payload );
 		try {
@@ -313,14 +311,14 @@ export function PanelReportSettings() {
 				setSettings( mergeSettings( data.panel_report_pdf ) );
 			}
 			setFreezeOpen( false );
-			setNotice( {
-				type: 'success',
+			toast( {
+				variant: 'success',
 				message:
 					'Panel report settings saved and frozen. Panel coordinators can download the PDF.',
 			} );
 		} catch {
-			setNotice( {
-				type: 'error',
+			toast( {
+				variant: 'error',
 				message: 'Could not save and freeze settings.',
 			} );
 		} finally {
@@ -330,7 +328,6 @@ export function PanelReportSettings() {
 
 	const handleUnfreezeSettings = async () => {
 		setFreezing( true );
-		setNotice( null );
 		try {
 			const data = await post(
 				`sessions/${ sessionId }/panel-report-settings/unfreeze`,
@@ -341,12 +338,12 @@ export function PanelReportSettings() {
 				setSettings( mergeSettings( data.panel_report_pdf ) );
 			}
 			setUnfreezeOpen( false );
-			setNotice( {
-				type: 'success',
+			toast( {
+				variant: 'success',
 				message: 'Panel report settings unlocked for editing.',
 			} );
 		} catch {
-			setNotice( { type: 'error', message: 'Could not unfreeze settings.' } );
+			toast( { variant: 'error', message: 'Could not unfreeze settings.' } );
 		} finally {
 			setFreezing( false );
 		}
@@ -408,15 +405,6 @@ export function PanelReportSettings() {
 					</div>
 				</div>
 			</section>
-
-			{ notice ? (
-				<Notice
-					variant={ notice.type === 'error' ? 'error' : 'success' }
-					className="mb-6"
-				>
-					{ notice.message }
-				</Notice>
-			) : null }
 
 			<fieldset disabled={ frozen } className="min-w-0 max-w-full disabled:opacity-75">
 				<PanelReportSettingsPreview

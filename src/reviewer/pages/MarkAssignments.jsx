@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from '@wordpress/element';
+import { Link } from 'react-router-dom';
 import { AssignmentCard } from '../components/AssignmentCard';
-import { PanelHeadUnfreezeRequests } from '../components/PanelHeadUnfreezeRequests';
 import {
 	CardGridSkeleton,
 	ContentLoadingRegion,
@@ -28,6 +28,8 @@ export function MarkAssignments() {
 	const [ assignments, setAssignments ] = useState( null );
 	const [ loading, setLoading ] = useState( true );
 	const [ error, setError ] = useState( null );
+	const [ pendingUnfreezeCount, setPendingUnfreezeCount ] = useState( 0 );
+	const isPanelHead = Boolean( window.prAppData?.isPanelHead );
 
 	const load = useCallback( async () => {
 		setLoading( true );
@@ -47,6 +49,19 @@ export function MarkAssignments() {
 		load();
 	}, [ load ] );
 
+	useEffect( () => {
+		if ( ! isPanelHead ) {
+			return;
+		}
+		get( '/reviewer/unfreeze-requests?status=pending' )
+			.then( ( data ) =>
+				setPendingUnfreezeCount(
+					Array.isArray( data?.requests ) ? data.requests.length : 0
+				)
+			)
+			.catch( () => {} );
+	}, [ isPanelHead ] );
+
 	const { showSkeleton } = useLoadingPhase( loading, assignments !== null );
 	const list = assignments ?? [];
 	const markable = list.filter( ( a ) => a.markable );
@@ -59,7 +74,23 @@ export function MarkAssignments() {
 				description="Select a project, review round, and panel to see your student list."
 			/>
 
-			<PanelHeadUnfreezeRequests className="mb-6" />
+			{ isPanelHead && pendingUnfreezeCount > 0 ? (
+				<div className="mb-6" role="status">
+					<Notice variant="info">
+						<span className="font-medium">
+							{ pendingUnfreezeCount } pending unfreeze{ ' ' }
+							{ pendingUnfreezeCount === 1 ? 'request' : 'requests' } from
+							reviewers on your panels.
+						</span>{ ' ' }
+						<Link
+							to="/unfreeze-requests"
+							className="font-medium text-primary underline hover:no-underline"
+						>
+							Review requests
+						</Link>
+					</Notice>
+				</div>
+			) : null }
 
 			{ error ? (
 				<div className="mb-4">
@@ -99,6 +130,10 @@ export function MarkAssignments() {
 									a.is_panel_coordinator
 										? `/panel-report/${ a.session_id }/${ a.review_id }/${ a.panel_id }`
 										: undefined
+								}
+								frozen={
+									Boolean( a.review_frozen ) ||
+									Boolean( a.panel_scores_frozen )
 								}
 							/>
 						</li>

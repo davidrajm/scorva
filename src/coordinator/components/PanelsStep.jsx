@@ -46,11 +46,21 @@ export function PanelsStep( {
 				panel_id: panelId || null,
 			} );
 			await onReload?.();
-		} catch {
-			onNotice?.( {
-				variant: 'error',
-				message: 'Could not assign panel.',
-			} );
+		} catch ( err ) {
+			if ( err?.code === 'pr_panel_change_blocked' ) {
+				onNotice?.( {
+					variant: 'error',
+					message: parseApiErrorMessage(
+						err,
+						'This student has scores recorded. Use the Review Assignments step to reassign.'
+					),
+				} );
+			} else {
+				onNotice?.( {
+					variant: 'error',
+					message: 'Could not assign panel.',
+				} );
+			}
 		} finally {
 			setBusy( false );
 		}

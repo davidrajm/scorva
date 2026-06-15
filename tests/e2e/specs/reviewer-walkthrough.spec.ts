@@ -39,6 +39,8 @@ test('reviewer walkthrough — open assignment and save a mark', async ({ page }
 		{
 			projectTitle: saved!.projectTitle,
 			studentA: saved!.studentA,
+			reviewerPortalUrl: saved!.reviewerPortalUrl,
+			reviewerPortalPassword: saved!.reviewerPortalPassword,
 		},
 		onStep
 	);

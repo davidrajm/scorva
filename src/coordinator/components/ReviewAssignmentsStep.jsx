@@ -28,6 +28,8 @@ export function ReviewAssignmentsStep( {
 	const [ confirmAction, setConfirmAction ] = useState( null );
 	const [ correctionTarget, setCorrectionTarget ] = useState( null );
 	const [ attendanceNotice, setAttendanceNotice ] = useState( null );
+	const [ purgeConfirm, setPurgeConfirm ] = useState( null );
+	const [ purgeDeleteText, setPurgeDeleteText ] = useState( '' );
 
 	const syncDraftsFromStudents = useCallback( ( rows ) => {
 		const drafts = {};
@@ -126,7 +128,7 @@ export function ReviewAssignmentsStep( {
 		);
 	};
 
-	const saveStudentRow = async ( row ) => {
+	const saveStudentRow = async ( row, purgeMarks = false ) => {
 		const draft = rowDrafts[ rowKey( row.student_id ) ];
 		if ( ! draft ) {
 			return;
@@ -140,28 +142,38 @@ export function ReviewAssignmentsStep( {
 			return;
 		}
 
+		const studentPayload = {
+			student_id: row.student_id,
+			panel_id: panelId,
+			project_title: draft.project_title ?? '',
+		};
+
 		setBusy( true );
 		try {
+			const requestBody = { students: [ studentPayload ] };
+			if ( purgeMarks ) {
+				requestBody.purge_marks = true;
+			}
 			const data = await put(
 				`/sessions/${ sessionId }/reviews/${ selectedReviewId }/assignments/students`,
-				{
-					students: [
-						{
-							student_id: row.student_id,
-							panel_id: panelId,
-							project_title: draft.project_title ?? '',
-						},
-					],
-				}
+				requestBody
 			);
 			setStudents( data.students ?? [] );
 			syncDraftsFromStudents( data.students ?? [] );
 			await onReload?.();
-		} catch {
-			onNotice?.( {
-				variant: 'error',
-				message: 'Could not save assignment.',
-			} );
+		} catch ( err ) {
+			if ( err?.code === 'pr_review_reassign_has_marks' ) {
+				setPurgeConfirm( {
+					row,
+					affectedStudentIds: err?.data?.affected_student_ids ?? [],
+				} );
+				setPurgeDeleteText( '' );
+			} else {
+				onNotice?.( {
+					variant: 'error',
+					message: 'Could not save assignment.',
+				} );
+			}
 		} finally {
 			setBusy( false );
 		}
@@ -482,6 +494,55 @@ export function ReviewAssignmentsStep( {
 				onConfirm={ runResetToDefaults }
 				onCancel={ () => setConfirmAction( null ) }
 			/>
+
+			{ purgeConfirm ? ( () => {
+				const affectedStudents = students.filter( ( s ) =>
+					purgeConfirm.affectedStudentIds.includes( s.student_id )
+				);
+				const studentList = affectedStudents
+					.map( ( s ) => `${ s.name } (${ s.reg_no })` )
+					.join( ', ' );
+				return (
+					<ConfirmDialog
+						open
+						title="Delete scores and reassign?"
+						confirmLabel="Delete and reassign"
+						confirmVariant="destructive"
+						confirmDisabled={ purgeDeleteText !== 'DELETE' }
+						onConfirm={ async () => {
+							const row = purgeConfirm.row;
+							setPurgeConfirm( null );
+							setPurgeDeleteText( '' );
+							await saveStudentRow( row, true );
+						} }
+						onCancel={ () => {
+							setPurgeConfirm( null );
+							setPurgeDeleteText( '' );
+						} }
+					>
+						<p className="text-sm text-text-muted">
+							All scores from{ ' ' }
+							<strong className="text-text">{ selectedReview?.label ?? 'this review' }</strong>{ ' ' }
+							will be permanently deleted for:{ ' ' }
+							<strong className="text-text">{ studentList }</strong>.{ ' ' }
+							This cannot be undone.
+						</p>
+						<label className="mt-4 block text-sm">
+							<span className="text-text-muted">
+								Type{ ' ' }<strong className="text-text">DELETE</strong>{ ' ' }
+								to confirm
+							</span>
+							<input
+								type="text"
+								className="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
+								value={ purgeDeleteText }
+								onChange={ ( e ) => setPurgeDeleteText( e.target.value ) }
+								autoFocus
+							/>
+						</label>
+					</ConfirmDialog>
+				);
+			} )() : null }
 
 			{ ! isWizardTerminalStep ? (
 				<div className="mt-6 flex justify-end">

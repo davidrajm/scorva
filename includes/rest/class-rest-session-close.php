@@ -71,13 +71,7 @@ final class Rest_Session_Close
     public static function close_session(\WP_REST_Request $request)
     {
         $session_id = (int) $request->get_param('id');
-        $params = $request->get_json_params();
-        if (!is_array($params)) {
-            $params = [];
-        }
-
-        $also_disable = !empty($params['also_disable_coordinators']);
-        $result = (new SessionCloseService())->close($session_id, $also_disable);
+        $result = (new SessionCloseService())->close($session_id);
 
         if (!$result['ok']) {
             $error = $result['error'] ?? 'close_failed';
